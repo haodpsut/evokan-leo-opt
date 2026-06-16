@@ -1,0 +1,14 @@
+# Conda env for the RTX 4090 server (optional; CPU is enough, models are tiny).
+#   conda env create -f environment.yml && conda activate evokan
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+name: evokan
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - tqdm
+  - pytest
+  - pip

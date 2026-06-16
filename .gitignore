@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+*.npz
+!results/logs/.gitkeep
+.DS_Store
