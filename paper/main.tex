@@ -172,8 +172,9 @@ are FedAvg-aggregated~\cite{mcmahan2017fedavg}. A contextual-bandit
 controller~\cite{li2010linucb} observes a context (regime indicator, budget price,
 recent error) and selects the keep-fraction of the top-magnitude update entries,
 trading communication against accuracy under $B(t)$. A drift
-detector~\cite{page1954cusum} on the surrogate-error stream flags regime switches
-for optional refresh.
+detector~\cite{page1954cusum} on the surrogate-error stream flags regime switches;
+it drives the self-evolution ablation below, whereas the proposed method relies on
+continual aggregation alone to track drift.
 
 \subsection{Reading closed-form rules}
 Because the first-layer response to each input is a single univariate curve, we
@@ -357,9 +358,13 @@ MLP & 0.005 & 2.55 \\
 
 \subsection{Communication--accuracy frontier}
 Sweeping the update keep-fraction traces the full frontier of the dense KAN
-(Fig.~\ref{fig:pareto2}); the bandit-controlled \texttt{fedkan\_opt} selects an
-operating point that approaches the dense-KAN accuracy at a fraction of the
-uplink, automating the choice an operator would otherwise tune by hand.
+(Fig.~\ref{fig:pareto2}); the accuracy is essentially flat down to a keep-fraction
+of about $0.5$ and then collapses, so roughly half of the uplink is redundant. The
+bandit-controlled \texttt{fedkan\_opt} lands in this favorable region
+automatically. We note plainly that a well-chosen fixed keep-fraction can match or
+slightly beat the bandit operating point; the controller's value is that it needs
+no manual tuning and adapts per slot to a time-varying budget $B(t)$, which a fixed
+setting cannot.
 
 \begin{figure}[t]
 \centering
@@ -426,11 +431,16 @@ matters for our setting, namely the data-limited federated/online regime
 (Table~\ref{tab:gen}): the spline inductive bias is sample-efficient and
 extends smoothly beyond the training support. Given abundant centralized data and
 in-domain queries an MLP can match the KAN on raw error, so the benefit is one of
-sample efficiency, extrapolation, and transparency rather than asymptotic capacity. Our oracle and channel model are simulation-based; closing
-the loop on measured LEO traces and extending the decision to joint power and
-rate/sub-band allocation are natural next steps. Finally, the negative
-self-evolution result is specific to this low-data-per-slot federated setting and
-may differ when per-task data is abundant.
+sample efficiency, extrapolation, and transparency rather than asymptotic capacity. Our study is deliberately scoped to a single-link, three-variable problem with a
+simulation oracle so as to isolate and quantify the surrogate's properties
+(accuracy, sample efficiency, extrapolation, interpretability) cleanly. The
+methodology is problem-agnostic, and the most important extensions are to
+multi-user and multi-sub-band allocation with coupling constraints, comparison
+against learning-to-optimize baselines such as deep unfolding and WMMSE
+networks~\cite{sun2018l2o}, and closing the loop on measured LEO traces. Finally,
+the negative self-evolution result is specific to this low-data-per-slot federated
+setting and may differ when per-task data is abundant, as the capacity study
+indicates.
 
 \section{Conclusion}
 We presented an interpretable federated KAN surrogate for autonomous resource
