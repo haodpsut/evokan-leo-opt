@@ -70,16 +70,21 @@ def pass_gain(n_slots, max_elev, snr_zenith_db=22.0, theta_min=10.0):
     return 10.0 ** (g_db / 10.0), el, vis
 
 
-def sample_states(I_now, n, rng, Pmax=5.0, g_lo=0.2, g_hi=30.0, p0_lo=0.1, p0_hi=1.0):
+def sample_states(I_now, n, rng, Pmax=5.0, g_lo=0.2, g_hi=30.0, p0_lo=0.1, p0_hi=1.0,
+                  csi_sigma=0.0):
     """Draw n link states for a gateway serving many links under the CURRENT
     interference regime I_now (the drift variable). Channel gains g span a broad
     range (diverse links/sub-bands) so each slot has full g-coverage; the
-    non-stationarity is the interference-regime switch I_now (LEO handover)."""
+    non-stationarity is the interference-regime switch I_now (LEO handover).
+
+    csi_sigma>0 injects log-normal CSI estimation error: the oracle label uses the
+    TRUE gain, but the state fed to the surrogate carries the estimate g_hat."""
     g = np.exp(rng.uniform(np.log(g_lo), np.log(g_hi), n))     # log-uniform over the range
     p0a = rng.uniform(p0_lo, p0_hi, n)
     I = np.full(n, I_now)
-    pstar, eestar = optimal_power(g, I, p0a, Pmax=Pmax)
-    X = np.stack([g, I, p0a], axis=1).astype(np.float32)       # (n, 3)
+    pstar, eestar = optimal_power(g, I, p0a, Pmax=Pmax)         # oracle on TRUE gain
+    g_obs = g * np.exp(csi_sigma * rng.standard_normal(n)) if csi_sigma > 0 else g
+    X = np.stack([g_obs, I, p0a], axis=1).astype(np.float32)    # surrogate sees estimate
     return X, pstar.astype(np.float32), eestar.astype(np.float32)
 
 

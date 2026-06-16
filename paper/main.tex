@@ -118,88 +118,168 @@ concrete and quantified for autonomous, non-stationary LEO resource optimization
 and to delineate honestly where they do and do not help.
 
 \section{System Model and Problem Formulation}\label{sec:model}
-\subsection{Energy-efficient power control}
-Consider a set $\mathcal{N}$ of gateway/UAV terminals served by LEO backhaul. A
-served link in state $s=(g,I,p_0)$ has channel gain $g$, interference $I$, and a
-circuit/energy term $p_0$. With transmit power $p$, the energy efficiency is
+
+\subsection{Network, channel, and interference model}
+A set $\mathcal{N}=\{1,\dots,N\}$ of gateway/UAV terminals is served by an LEO
+constellation over slotted time $t\in\{1,\dots,T\}$. Terminal $n$ has elevation
+$\vartheta_{n,t}$ to its serving satellite, giving a mean gain
+$\bar g(\vartheta_{n,t})$ from slant-range path loss; small-scale fading
+$\zeta_{n,t}$ yields the instantaneous gain $g_{n,t}=\bar g(\vartheta_{n,t})\zeta_{n,t}$.
+Perfect CSI is unrealistic, so the terminal acts on an \emph{estimate}
+$\hat g_{n,t}=g_{n,t}\,e^{\varepsilon_{n,t}}$ with
+$\varepsilon_{n,t}\sim\mathcal N(0,\sigma_c^2)$. Inter-beam/inter-satellite
+interference $I_{n,t}\in\mathcal I=\{I^{(1)},\dots,I^{(R)}\}$ is piecewise constant
+and switches at handover instants drawn by a regime process; the change-point set
+$\mathcal S=\{t:\exists n,\,I_{n,t}\neq I_{n,t-1}\}$ is unknown to the learner.
+Visibility $a_{n,t}\in\{0,1\}$ gates participation. The per-link state is
+$s_{n,t}=(g_{n,t},I_{n,t},p_{0,n})$ with circuit power $p_{0,n}$; its distribution
+$\mathcal D_t$ drifts with $\vartheta_{n,t}$ and $I_{n,t}$, making the environment
+non-stationary~\cite{kodheli2021ntn,gama2014drift}.
+
+\subsection{Per-link decision and regret}
+With transmit power $p\in[0,P_{\max}]$ the energy efficiency is
 \begin{equation}
-\mathrm{EE}(p;s)=\frac{\log_2\!\big(1+ g p/(1+I)\big)}{p+p_0}\quad[\text{bits/Hz/J}],
+\mathrm{EE}(p;s)=\frac{\log_2\!\big(1+ g p/(1+I)\big)}{p+p_0}\ \ [\text{bits/Hz/J}],
 \end{equation}
-which is quasi-concave in $p$ with a unique maximizer
-$\pstar(s)=\arg\max_{0\le p\le P_{\max}}\mathrm{EE}(p;s)$~\cite{zappone2015ee}.
-The stationarity condition is transcendental, so $\pstar(\cdot)$ has no closed
-form, yet it is a smooth, deterministic function of $s$, the ideal regime for a
-spline-based surrogate.
+quasi-concave in $p$ with a unique maximizer
+$\pstar(s)=\arg\max_{0\le p\le P_{\max}}\mathrm{EE}(p;s)$~\cite{zappone2015ee}. Its
+stationarity condition $\partial_p\mathrm{EE}=0$,
+\begin{equation}
+\frac{g/(1+I)}{\ln 2\,\big(1+\tfrac{gp}{1+I}\big)}\,(p+p_0)=\log_2\!\Big(1+\tfrac{gp}{1+I}\Big),
+\label{eq:stat}
+\end{equation}
+is transcendental, so $\pstar(\cdot)$ has no closed form, yet it is smooth and
+deterministic in $s$. Decision quality is the EE regret
+$\rho(p;s)=\mathrm{EE}(\pstar(s);s)-\mathrm{EE}(p;s)\ge 0$.
 
-\subsection{Non-stationarity over an LEO pass}
-Along a pass the elevation sweep moves the achievable gain $g$, while satellite
-handovers switch the interference level $I_n(t)$ in a piecewise-constant
-fashion~\cite{kodheli2021ntn}; visibility windows gate which terminals can
-participate. The operative region of the state space, and thus the relevant slice
-of $\pstar(\cdot)$, therefore drift in time, so the surrogate must be learned and
-refreshed online rather than fit once.
-
-\subsection{Problem}
-Let $\hat{p}_\theta$ be a shared surrogate with parameters $\theta$ and let
-$m_{n,t}\in\{0,1\}^{|\theta|}$ be the uplink mask of terminal $n$ at slot $t$. We
-minimize the time-averaged energy-efficiency regret subject to a per-slot uplink
-budget $B(t)$:
+\subsection{The networked meta-problem}
+A single shared surrogate $\hat p_\theta$ is learned across $\mathcal N$ by
+federated updates. A participating terminal sends a sparsified update through a mask
+$m_{n,t}\in\{0,1\}^{|\theta|}$ at bit cost $c(m_{n,t})=\beta\|m_{n,t}\|_0$, under a
+per-slot uplink budget $B(t)$:
 \begin{equation}
 \begin{aligned}
-\min_{\theta,\{m_{n,t}\}}\ &\frac{1}{T}\sum_{t=1}^{T}\mathbb{E}_{s\sim\mathcal{D}_t}
-\!\left[\mathrm{EE}(\pstar(s);s)-\mathrm{EE}(\hat{p}_\theta(s);s)\right]\\
-\text{s.t.}\ &\textstyle\sum_{n} \|m_{n,t}\|_0\,\beta \le B(t),\quad \forall t,
+\textbf{(P1)}\quad\min_{\theta,\{m_{n,t}\}}\ &\frac1T\sum_{t=1}^{T}\frac1N\sum_{n=1}^{N}
+   \mathbb E_{s\sim\mathcal D_t}\!\big[\rho(\hat p_\theta(\hat s_{n,t});s)\big]\\
+\text{s.t.}\ & \sum_{n\in\mathcal N} a_{n,t}\,c(m_{n,t})\le B(t),\quad \forall t,\\
+& \theta_{t}=\!\sum_n w_{n,t}\big(\theta_{t-1}+m_{n,t}\!\odot\!\Delta\theta_{n,t}\big),\ \ m_{n,t}\!\in\!\{0,1\}^{|\theta|},
 \end{aligned}
 \label{eq:p1}
 \end{equation}
-with $\theta$ aggregated across $\mathcal{N}$ and $\mathcal{D}_t$ the (drifting)
-state distribution. Problem~\eqref{eq:p1} is non-convex (surrogate training),
-coupled through the shared $\theta$ and the budget, and time-varying through
-$\mathcal{D}_t$.
+where $\hat s_{n,t}$ carries the estimated gain $\hat g_{n,t}$. (P1) is a
+mixed-integer non-convex program: the masks are binary, the surrogate loss is
+non-convex, the shared $\theta$ and the budget couple all terminals, and
+$\mathcal D_t$ is time-varying with unknown change points $\mathcal S$. Solving it
+exactly and online at scale is intractable.
+
+\subsection{Decomposition}\label{sec:decomp}
+We split (P1) into an inner statistical-learning problem and an outer
+resource-control problem.
+
+\emph{Inner --- what to learn.} For fixed participation and masks the best surrogate
+minimizes empirical regret, well approximated by the supervised fit to the oracle,
+\begin{equation}
+\theta^{\star}=\arg\min_\theta \sum_{n,t} a_{n,t}\,\big\|\hat p_\theta(\hat s_{n,t})-\pstar(s_{n,t})\big\|^2 .
+\label{eq:inner}
+\end{equation}
+
+\emph{Outer --- what to send.} Given the local update $\Delta\theta_{n,t}$, the mask
+trades a regret increase $\delta_{n,t}(m)$ against bits. Relaxing the budget with a
+multiplier $\lambda_t\ge0$,
+\begin{equation}
+\min_{\{m_{n,t}\}}\ \sum_n\Big[\delta_{n,t}(m_{n,t})+\lambda_t\,\beta\|m_{n,t}\|_0\Big].
+\label{eq:outer}
+\end{equation}
+At a fixed $\|m\|_0$, $\delta_{n,t}$ is minimized by keeping the largest-magnitude
+entries of $\Delta\theta_{n,t}$ (top-$k$); the KKT condition of \eqref{eq:outer}
+then places a single threshold on $|\Delta\theta_{n,t,j}|$ shared by all terminals,
+a water-filling rule whose level is the dual price $\lambda_t$. At the budget
+boundary this gives the closed-form keep-fraction
+\begin{equation}
+\kappa_t^{\star}=\min\!\Big(1,\ \frac{B(t)}{\beta\,|\theta|\sum_n a_{n,t}}\Big).
+\label{eq:kappa}
+\end{equation}
+
+\subsection{Optimization-to-learning roadmap}
+Eqs.~\eqref{eq:inner}--\eqref{eq:kappa} are the principled \emph{static} solution.
+Online they break: $\lambda_t$ depends on the unknown, drifting $\mathcal D_t$ and
+on cross-terminal heterogeneity; the change points $\mathcal S$ are unobserved; and
+re-deriving $\theta^{\star}$ per slot is infeasible. We therefore (i) replace the
+inner solver \eqref{eq:inner} by a learned, sample-efficient, interpretable KAN
+surrogate, and (ii) replace the outer rule \eqref{eq:kappa} by an online controller
+that \emph{learns} the dual price $\lambda_t$ from feedback. This is the
+Optimization$\to$AI transition that defines the method.
 
 \section{Proposed Method}\label{sec:method}
-\subsection{KAN surrogate}
-We use a two-layer KAN regressor $\hat{p}_\theta:\mathbb{R}^3\!\to\!\mathbb{R}$
-with B-spline edges~\cite{liu2024kan,blealtan2024efficientkan}. Each layer computes
-$y_o=\sum_i\big(w^{b}_{oi}\,\mathrm{SiLU}(x_i)+\sum_k c_{oik}\,B_k(x_i)\big)$, a sum
-of univariate functions of the inputs, which is what makes the trained model
-readable.
+\subsection{Inner solver: the KAN surrogate}
+We solve \eqref{eq:inner} with a two-layer KAN regressor
+$\hat p_\theta:\mathbb R^3\!\to\!\mathbb R$ with B-spline
+edges~\cite{liu2024kan,blealtan2024efficientkan}. Each layer computes
+$y_o=\sum_i\big(w^{b}_{oi}\,\mathrm{SiLU}(x_i)+\sum_k c_{oik}B_k(x_i)\big)$, a sum of
+univariate functions. This additive-spline form is a strong inductive bias for the
+smooth map $\pstar(\cdot)$: it is sample-efficient in the data-limited federated
+regime, extrapolates smoothly beyond the training support, and, being a sum of
+inspectable one-dimensional curves, is readable.
 
-\subsection{Federated online learning with budgeted sparsification}
-At each slot the visible terminals draw states at their current regime, label them
-with the oracle $\pstar$, take local SGD steps, and send sparsified updates that
-are FedAvg-aggregated~\cite{mcmahan2017fedavg}. A contextual-bandit
-controller~\cite{li2010linucb} observes a context (regime indicator, budget price,
-recent error) and selects the keep-fraction of the top-magnitude update entries,
-trading communication against accuracy under $B(t)$. A drift
-detector~\cite{page1954cusum} on the surrogate-error stream flags regime switches;
-it drives the self-evolution ablation below, whereas the proposed method relies on
-continual aggregation alone to track drift.
+\subsection{Outer control: learning the dual price}
+A contextual bandit~\cite{li2010linucb} observes the context (regime indicator,
+budget price, recent regret) and selects the keep-fraction $\kappa_t$ from a
+discrete set; its reward, the realized regret reduction minus $\lambda_t$ times the
+bits spent, is exactly the Lagrangian \eqref{eq:outer}. The controller thus learns
+online the price that \eqref{eq:kappa} computes statically, without observing
+$\mathcal D_t$ or $\mathcal S$. Masked updates are
+FedAvg-aggregated~\cite{mcmahan2017fedavg}; participation follows visibility
+$a_{n,t}$. A change detector~\cite{page1954cusum} on the regret stream supplies the
+regime indicator and drives the self-evolution ablation below.
 
-\subsection{Reading closed-form rules}
-Because the first-layer response to each input is a single univariate curve, we
-probe each feature in isolation and fit a small library of forms (linear,
-quadratic, logarithmic, square-root, reciprocal), keeping the best by $R^2$. This
-yields human-readable rules such as ``$\pstar$ grows near-linearly with the
-circuit term $p_0$ but nonlinearly with channel gain $g$,'' which no MLP exposes.
+\subsection{Interpretability: closed-form rules}
+Because each first-layer edge is a univariate curve, we probe each feature in
+isolation and fit a small library of forms (linear, quadratic, logarithmic,
+square-root, reciprocal), keeping the best by $R^2$. This turns $\theta^{\star}$
+into human-readable rules such as ``$\pstar$ grows near-linearly with the circuit
+term $p_0$ but nonlinearly with channel gain $g$,'' which no MLP exposes.
 
-\subsection{Evolutive capacity (ablation)}
-We also test \emph{self-evolution}: on a drift flag the controller may grow the
-spline grid, adding knots to refine the surrogate. As Sec.~\ref{sec:results} shows,
-this does not help here; we therefore keep a static grid in the proposed method and
-report evolution as an ablation.
+\subsection{Self-evolution and ablation design}\label{sec:ablation}
+We additionally test \emph{self-evolution}: on a change flag the controller may grow
+the spline grid, adding knots to refine the inner solver. Our experiments isolate
+each component by toggling exactly one at a time (Table~\ref{tab:abl}): replacing
+the KAN inner solver by an MLP or a linear map probes the surrogate class and
+nonlinearity; removing the bandit (dense updates, $\kappa_t\!=\!1$) probes the value
+of the outer controller; enabling grid growth probes self-evolution.
+
+\begin{table}[t]
+\caption{Ablation design: each variant changes one component of (P1).}
+\label{tab:abl}
+\centering
+\footnotesize
+\begin{tabular}{lcccl}
+\toprule
+Variant & inner & outer ctrl. & evolve & isolates \\
+\midrule
+\textbf{fedkan\_opt} (ours) & KAN & bandit $\kappa_t$ & -- & (proposed) \\
+kan\_full   & KAN & none ($\kappa\!=\!1$) & -- & comm.\ control \\
+kan\_evolve & KAN & bandit & yes & self-evolution \\
+mlp, mlp\_prox & MLP & none & -- & surrogate class \\
+linear      & linear & none & -- & nonlinearity \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Experimental Setup}\label{sec:setup}
-LEO geometry is generated from elevation-dependent path loss; interference follows
-piecewise-constant regimes with handover switches; ten terminals participate over
-four passes. Each slot draws $128$ oracle-labeled states. All surrogates are
-parameter-matched ($\approx\!360$ parameters). We compare: \textbf{fedkan\_opt}
-(proposed, bandit-sparsified KAN), \textbf{kan\_full} (KAN, dense updates),
-\textbf{kan\_evolve} (proposed $+$ grid self-evolution), \textbf{mlp} and
-\textbf{mlp\_prox}~\cite{li2020fedprox} (parameter-matched MLPs), and
-\textbf{linear}. Metrics: normalized MSE (NMSE) of $\hat p$ versus $\pstar$,
-energy-efficiency regret, total uplink bits, extracted-rule fidelity $R^2$, and
-parameters; means over ten seeds with Wilcoxon signed-rank tests.
+LEO geometry is generated from elevation-dependent path loss; the interference
+takes $R=3$ regimes that switch at handover instants; $N$ terminals participate
+over multiple passes with visibility gating. Each slot draws oracle-labeled states
+(power solved to the optimizer~\eqref{eq:stat}). Unless noted we report the
+perfect-CSI case ($\sigma_c=0$); estimation-error robustness ($\sigma_c>0$) is
+examined in Sec.~\ref{sec:disc}. All surrogates are parameter-matched and share the
+identical training budget so the comparison isolates the model class
+(Table~\ref{tab:abl}). The variants are \textbf{fedkan\_opt} (proposed),
+\textbf{kan\_full}, \textbf{kan\_evolve}, \textbf{mlp} and
+\textbf{mlp\_prox}~\cite{li2020fedprox}, and \textbf{linear}. Metrics: normalized
+MSE (NMSE) of $\hat p$ versus $\pstar$, energy-efficiency regret~$\rho$, total
+uplink bits, extracted-rule fidelity $R^2$, and parameter count; we report
+mean$\pm$std over many seeds with Wilcoxon signed-rank tests. Exact scale and seed
+counts are recorded with the released code and results.
 
 \section{Results}\label{sec:results}
 \subsection{Accuracy and communication}

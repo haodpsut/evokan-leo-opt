@@ -26,6 +26,7 @@ def parse():
     p.add_argument("--grid-size", type=int, default=5)
     p.add_argument("--grid-max", type=int, default=10)
     p.add_argument("--lr", type=float, default=0.01)
+    p.add_argument("--csi-sigma", type=float, default=0.0)
     p.add_argument("--out", default="results/opt.csv")
     p.add_argument("--logdir", default="results/logs")
     return p.parse_args()
@@ -38,7 +39,8 @@ def main():
     rows = []
     common = dict(device=a.device, n_nodes=a.n_nodes, slots_per_pass=a.slots_per_pass,
                   n_passes=a.n_passes, epochs=a.epochs, slot_samples=a.slot_samples,
-                  grid_size=a.grid_size, grid_max=a.grid_max, lr=a.lr)
+                  grid_size=a.grid_size, grid_max=a.grid_max, lr=a.lr,
+                  csi_sigma=a.csi_sigma)
 
     def flush():
         if rows:

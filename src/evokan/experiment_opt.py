@@ -38,6 +38,7 @@ class Config:
     Pmax: float = 5.0
     interference_levels: tuple = (0.2, 1.0, 3.0)
     min_dwell: int = 8
+    csi_sigma: float = 0.0           # log-normal CSI estimation error on the gain input
     # model
     model_type: str = "kan"          # kan | mlp
     hidden: tuple = (10,)
@@ -155,7 +156,8 @@ def run_experiment(cfg: Config, verbose=False):
             nd = nodes[nidx]
             if not nd["vis"][t]:
                 continue
-            X, y, _ = op.sample_states(nd["I"][t], cfg.slot_samples, rng, Pmax=cfg.Pmax)
+            X, y, _ = op.sample_states(nd["I"][t], cfg.slot_samples, rng, Pmax=cfg.Pmax,
+                                       csi_sigma=cfg.csi_sigma)
             Xs = op.standardize_states(X, stats)
             local = fed.clone_model(global_model)
             pre_nmse = fed.nmse(local, Xs, y, cfg.device)
