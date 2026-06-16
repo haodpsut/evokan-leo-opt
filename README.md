@@ -37,4 +37,5 @@ src/evokan/  opt_problem (oracle+LEO states), orbit, kan, drift, controller,
 scripts/     smoke_opt.py, run_opt.py
 tests/       test_opt.py
 ```
-Authors: Do Phuc Hao (DAU, first + corresponding), Truong Duy Dinh (PTIT, funding).
+Authors: Phuc Hao Do (DAU/CAIRA, first + corresponding), Huu Phu Le (DAU/CAIRA),
+Truong Duy Dinh (PTIT, funding).
