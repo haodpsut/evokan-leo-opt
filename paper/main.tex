@@ -846,6 +846,55 @@ so a fixed modest grid is preferred.}
 \label{fig:scaling}
 \end{figure}
 
+\subsection{Per-regime performance and CSI robustness}
+Two further studies probe robustness. Fig.~\ref{fig:regime} breaks the final NMSE
+down by interference regime: the KAN surrogates are at or below the MLP in every
+regime, so the aggregate advantage is not driven by a single easy operating point
+but holds across the whole drift range, including the high-interference regime that
+is hardest to serve. Fig.~\ref{fig:csifed} injects CSI estimation error into the
+federated loop (the surrogate sees $\hat g=g\,e^{\varepsilon}$,
+$\varepsilon\sim\mathcal N(0,\sigma_c^2)$, while the oracle uses the true gain) and
+sweeps $\sigma_c$. The KAN retains its edge over the MLP across low-to-moderate CSI
+error, the operating range of practical channel estimators; under very large error
+the two converge as the input becomes uninformative. This is the deployment-relevant
+counterpart to the centralized robustness check, and it confirms the advantage is
+not an artifact of perfect CSI.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.9\columnwidth}{!}{%
+\begin{tikzpicture}
+\begin{axis}[ybar,bar width=6pt,symbolic x coords={0.2,1.0,3.0},xtick=data,
+  xlabel={interference regime $I$},ylabel={final NMSE},ymin=0,
+  legend style={font=\scriptsize},legend pos=north west,enlarge x limits=0.3]
+\addplot table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
+\addplot table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
+\addplot table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
+\end{axis}
+\end{tikzpicture}}
+\caption{Final NMSE per interference regime. The KAN advantage holds across the
+drift range, not just on average.}
+\label{fig:regime}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\resizebox{0.9\columnwidth}{!}{%
+\begin{tikzpicture}
+\begin{axis}[xlabel={CSI error $\sigma_c$ (dB std)},ylabel={final NMSE},grid=both,
+  legend pos=north west,legend style={font=\scriptsize},
+  error bars/y dir=both,error bars/y explicit]
+\addplot[blue,thick,mark=*] table[x=sigma,y=kan,y error=kan_sd] {data/csi_fed.dat};
+\addlegendentry{ours (KAN)}
+\addplot[red,thick,densely dashed,mark=square] table[x=sigma,y=mlp,y error=mlp_sd] {data/csi_fed.dat};
+\addlegendentry{mlp}
+\end{axis}
+\end{tikzpicture}}
+\caption{Robustness to CSI estimation error in the federated loop. The KAN keeps its
+advantage across low-to-moderate error.}
+\label{fig:csifed}
+\end{figure}
+
 \section{Discussion and Limitations}\label{sec:disc}
 The energy-efficiency objective is flat near its optimum, so even imperfect power
 predictions incur small utility regret; this is why the MLP's regret is close to

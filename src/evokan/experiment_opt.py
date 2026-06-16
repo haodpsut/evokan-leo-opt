@@ -241,5 +241,8 @@ def run_experiment(cfg: Config, verbose=False, log_every=0, tag=""):
         "total_bits": float(np.sum(log["bits"])),
         "final_grid": log["grid"][-1] if log["grid"] else 0,
         "params": global_model.num_params(), "T": T,
+        # final NMSE per interference regime (for the per-regime breakdown study)
+        "regime_nmse": {float(L): (seq[-1][1] if seq else float("nan"))
+                        for L, seq in regime_nmse_log.items()},
     }
     return result, log, global_model

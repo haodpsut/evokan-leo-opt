@@ -73,6 +73,26 @@ def main():
             nm, nsd = ms(cap[gs]["nmse"])
             f.write("%d %.5f %.5f %d\n" % (gs, nm, nsd, cap[gs]["params"]))
     print("E capacity:", {gs: round(ms(cap[gs]['nmse'])[0], 3) for gs in grids})
+
+    # F. per-regime breakdown
+    levels = (0.2, 1.0, 3.0)
+    pr = studies.study_per_regime(seeds=Sf, levels=levels, **fed_kw)
+    with open(os.path.join(DATA, "regime.dat"), "w") as f:
+        f.write("regime fedkan_opt kan_full mlp\n")
+        for L in levels:
+            f.write("%.1f %.5f %.5f %.5f\n" % (L, ms(pr["fedkan_opt"][L])[0],
+                    ms(pr["kan_full"][L])[0], ms(pr["mlp"][L])[0]))
+    print("F per-regime done")
+
+    # G. CSI-error sensitivity (federated)
+    sigmas = (0.0, 0.5, 1.0, 2.0)
+    cf = studies.study_csi_fed(seeds=Sf, sigmas=sigmas, **fed_kw)
+    with open(os.path.join(DATA, "csi_fed.dat"), "w") as f:
+        f.write("sigma kan kan_sd mlp mlp_sd\n")
+        for sg in sigmas:
+            km, ksd = ms(cf["fedkan_opt"][sg]); mm, msd = ms(cf["mlp"][sg])
+            f.write("%.2f %.5f %.5f %.5f %.5f\n" % (sg, km, ksd, mm, msd))
+    print("G csi-fed done")
     print("ALL STUDIES DONE -> paper/data/")
 
 

@@ -94,6 +94,37 @@ def study_pareto(seeds=5, keeps=(0.1, 0.25, 0.5, 0.75, 1.0), **kw):
     return pts, bandit
 
 
+def study_per_regime(seeds=5, methods=("fedkan_opt", "kan_full", "mlp"),
+                     levels=(0.2, 1.0, 3.0), **kw):
+    """Final NMSE per interference regime for each method (multi-seed)."""
+    out = {m: {L: [] for L in levels} for m in methods}
+    for m in methods:
+        print(f"   [per-regime] {m}", flush=True)
+        for s in range(seeds):
+            cfg = make_config(m, seed=s, interference_levels=tuple(levels), **kw)
+            res, _, _ = run_experiment(cfg)
+            for L in levels:
+                v = res["regime_nmse"].get(float(L))
+                if v is not None and v == v:   # not NaN
+                    out[m][L].append(v)
+    return out
+
+
+def study_csi_fed(seeds=5, sigmas=(0.0, 0.5, 1.0, 2.0),
+                  methods=("fedkan_opt", "mlp"), **kw):
+    """CSI estimation-error sensitivity in the FEDERATED loop: surrogate sees a
+    noisy gain (csi_sigma>0), oracle labels use the true gain."""
+    out = {m: {sg: [] for sg in sigmas} for m in methods}
+    for sg in sigmas:
+        print(f"   [csi-fed] sigma={sg}", flush=True)
+        for m in methods:
+            for s in range(seeds):
+                cfg = make_config(m, seed=s, csi_sigma=sg, **kw)
+                res, _, _ = run_experiment(cfg)
+                out[m][sg].append(res["final_nmse"])
+    return out
+
+
 def study_scaling(seeds=5, nodes=(4, 8, 12, 16, 20), **kw):
     out = {n: {"nmse": [], "bits": []} for n in nodes}
     for n in nodes:
