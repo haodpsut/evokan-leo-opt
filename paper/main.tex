@@ -379,12 +379,19 @@ controller lands on a favorable knee automatically.}
 \label{fig:pareto2}
 \end{figure}
 
-\subsection{Scaling and required capacity}
+\subsection{Scaling and the role of capacity}
 Fig.~\ref{fig:scaling}(a) shows accuracy as the number of participating terminals
-grows; the federated surrogate improves with more contributors. Fig.~
-\ref{fig:scaling}(b) sweeps the KAN grid size: accuracy saturates at a modest grid
-and does not benefit from a larger one, which explains why online grid
-self-evolution is unnecessary here and a fixed, well-sized grid is preferred.
+grows: the federated surrogate improves up to about eight to twelve contributors
+and then saturates, while the uplink grows linearly with participation.
+Fig.~\ref{fig:scaling}(b) sweeps the KAN grid size under \emph{centralized}
+training with abundant data, where a larger grid monotonically lowers the error,
+i.e.\ capacity does help when data is plentiful. This makes the federated result
+more precise rather than contradicting it: in the federated streaming regime each
+round carries limited data, so growing the grid online (self-evolution) overfits
+and does not pay off (Sec.~\ref{sec:results}), whereas with abundant centralized
+data extra capacity is useful. The two views together localize \emph{when}
+capacity helps and explain why a fixed, modest grid is the right choice for the
+data-limited federated deployment.
 
 \begin{figure}[t]
 \centering
@@ -401,8 +408,10 @@ self-evolution is unnecessary here and a fixed, well-sized grid is preferred.
 \addplot[blue,thick,mark=*] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
 \end{axis}
 \end{tikzpicture}}
-\caption{(a) accuracy improves with more terminals; (b) accuracy saturates at a
-modest grid size, so a static grid suffices.}
+\caption{(a) accuracy improves with more terminals then saturates; (b) under
+centralized abundant data a larger grid keeps helping. In the data-limited
+federated regime, however, growing the grid online overfits (Sec.~\ref{sec:results}),
+so a fixed modest grid is preferred.}
 \label{fig:scaling}
 \end{figure}
 
