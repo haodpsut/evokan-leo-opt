@@ -54,6 +54,7 @@ class Config:
     max_eval: int = 400
     # control
     controller: str = "bandit"
+    fixed_keep: float = 1.0          # keep-fraction for FixedController (Pareto sweep)
     detector: str = "page_hinkley"
     evolve_enabled: bool = True
     budget_bits: float = 1.0e5
@@ -131,7 +132,8 @@ def run_experiment(cfg: Config, verbose=False):
 
     global_model = _regressor(cfg, 3)
     detectors = [make_detector(cfg.detector) for _ in range(cfg.n_nodes)]
-    controllers = [make_controller(cfg.controller) for _ in range(cfg.n_nodes)]
+    controllers = [make_controller(cfg.controller, keep=cfg.fixed_keep)
+                   for _ in range(cfg.n_nodes)]
 
     log = {"slot": [], "gap": [], "nmse": [], "bits": [], "grid": [],
            "n_part": [], "drift_flags": []}

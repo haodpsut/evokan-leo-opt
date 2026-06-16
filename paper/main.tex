@@ -5,7 +5,7 @@
 \usepackage{booktabs}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{positioning}
+\usetikzlibrary{positioning,calc}
 \usepackage[hidelinks]{hyperref}
 
 \newcommand{\pstar}{p^{\star}}
@@ -104,6 +104,18 @@ sparsification and quantization~\cite{mcmahan2017fedavg,li2020fedprox,shi2023kan
 we add a learned controller that adapts sparsity to a budget. \textbf{Concept-drift
 adaptation}~\cite{gama2014drift} motivates online tracking; here the drift is the
 physical regime switching of an LEO pass~\cite{kodheli2021ntn}.
+
+\textbf{KANs in communications} are only beginning to be explored; their promise
+for our setting is twofold. First, the additive univariate-spline structure is a
+strong inductive bias for the smooth, low-dimensional solution maps that arise in
+resource allocation, which improves sample efficiency in the data-limited
+federated regime and, as we show, extrapolation to unseen operating points.
+Second, unlike a black-box MLP a trained KAN is a sum of inspectable
+one-dimensional curves, so the learned policy can be reduced to closed-form rules
+and audited, a property increasingly demanded of AI in
+networks~\cite{wang2019leoml}. Our contribution is to make these properties
+concrete and quantified for autonomous, non-stationary LEO resource optimization,
+and to delineate honestly where they do and do not help.
 
 \section{System Model and Problem Formulation}\label{sec:model}
 \subsection{Energy-efficient power control}
@@ -292,13 +304,13 @@ direct, auditable output of the model.
 \addplot[blue,thick] table[x=x,y=y] {data/rule_g.dat};
 \addplot[red,dashed] table[x=x,y=yfit] {data/rule_g.dat};
 \end{axis}
-\begin{axis}[name=ax2,at={(ax1.right of east)},anchor=left of west,xshift=1.0cm,
+\begin{axis}[name=ax2,at={($(ax1.east)+(1.1cm,0)$)},anchor=west,
   width=5cm,height=4cm,title={$I$},xlabel={std.\ input},grid=both,
   title style={font=\small}]
 \addplot[blue,thick] table[x=x,y=y] {data/rule_I.dat};
 \addplot[red,dashed] table[x=x,y=yfit] {data/rule_I.dat};
 \end{axis}
-\begin{axis}[name=ax3,at={(ax2.right of east)},anchor=left of west,xshift=1.0cm,
+\begin{axis}[name=ax3,at={($(ax2.east)+(1.1cm,0)$)},anchor=west,
   width=5cm,height=4cm,title={$p_0$},xlabel={std.\ input},grid=both,
   title style={font=\small}]
 \addplot[blue,thick] table[x=x,y=y] {data/rule_p0.dat};
@@ -319,12 +331,93 @@ federated streaming regime, where each slot carries limited data, a well-sized
 static grid already suffices and growing it adds variance rather than capacity that
 pays off. We report this as a boundary of the ``evolutive capacity'' idea.
 
+\subsection{Generalization to unseen interference regimes}
+A surrogate deployed on an LEO link will meet interference regimes absent from its
+training history. We train on a subset of regimes ($I\in\{0.2,1.0\}$) and test on
+an \emph{unseen} regime ($I=3.0$). Table~\ref{tab:gen} reports in-domain and
+extrapolation NMSE over ten seeds. In-domain the two surrogates are comparable,
+but under extrapolation the KAN degrades far more gracefully than the MLP: its
+additive univariate splines extend smoothly beyond the training support, whereas
+the MLP's entangled features extrapolate poorly. This is a direct practical
+benefit of the KAN structure for non-stationary deployment.
+
+\begin{table}[t]
+\caption{In-domain vs.\ extrapolation NMSE (mean over ten seeds). Lower is better.}
+\label{tab:gen}
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & in-domain & unseen regime (extrap.) \\
+\midrule
+KAN & 0.003 & \textbf{0.37} \\
+MLP & 0.005 & 2.55 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Communication--accuracy frontier}
+Sweeping the update keep-fraction traces the full frontier of the dense KAN
+(Fig.~\ref{fig:pareto2}); the bandit-controlled \texttt{fedkan\_opt} selects an
+operating point that approaches the dense-KAN accuracy at a fraction of the
+uplink, automating the choice an operator would otherwise tune by hand.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.9\columnwidth}{!}{%
+\begin{tikzpicture}
+\begin{axis}[xlabel={uplink volume (Mb)},ylabel={final NMSE},grid=both,
+  legend pos=north east,legend style={font=\scriptsize}]
+\addplot[blue,thick,mark=*] table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto.dat};
+\addlegendentry{KAN, keep-fraction sweep}
+\addplot[teal,only marks,mark=triangle*,mark size=3pt]
+  table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto_bandit.dat};
+\addlegendentry{fedkan\_opt (bandit)}
+\end{axis}
+\end{tikzpicture}}
+\caption{Communication--accuracy frontier from a keep-fraction sweep; the bandit
+controller lands on a favorable knee automatically.}
+\label{fig:pareto2}
+\end{figure}
+
+\subsection{Scaling and required capacity}
+Fig.~\ref{fig:scaling}(a) shows accuracy as the number of participating terminals
+grows; the federated surrogate improves with more contributors. Fig.~
+\ref{fig:scaling}(b) sweeps the KAN grid size: accuracy saturates at a modest grid
+and does not benefit from a larger one, which explains why online grid
+self-evolution is unnecessary here and a fixed, well-sized grid is preferred.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.99\columnwidth}{!}{%
+\begin{tikzpicture}
+\begin{axis}[name=sa,width=4.7cm,height=3.8cm,xlabel={\# terminals},
+  ylabel={final NMSE},grid=both,title={(a) scaling},title style={font=\small},
+  error bars/y dir=both,error bars/y explicit]
+\addplot[blue,thick,mark=*] table[x=nodes,y=nmse,y error=nmse_sd] {data/scaling.dat};
+\end{axis}
+\begin{axis}[name=sb,at={($(sa.east)+(1.2cm,0)$)},anchor=west,width=4.7cm,height=3.8cm,
+  xlabel={KAN grid size},ylabel={NMSE},grid=both,title={(b) capacity},
+  title style={font=\small},error bars/y dir=both,error bars/y explicit]
+\addplot[blue,thick,mark=*] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
+\end{axis}
+\end{tikzpicture}}
+\caption{(a) accuracy improves with more terminals; (b) accuracy saturates at a
+modest grid size, so a static grid suffices.}
+\label{fig:scaling}
+\end{figure}
+
 \section{Discussion and Limitations}\label{sec:disc}
 The energy-efficiency objective is flat near its optimum, so even imperfect power
 predictions incur small utility regret; this is why the MLP's regret is close to
 the KAN's despite a much larger prediction error, and why we report both metrics.
 The interpretability gain is qualitative but concrete: the KAN yields auditable
-rules, the MLP does not. Our oracle and channel model are simulation-based; closing
+rules, the MLP does not. The KAN advantage is most pronounced in the regime that
+matters for our setting, namely the data-limited federated/online regime
+(Sec.~\ref{sec:results}) and extrapolation to unseen regimes
+(Table~\ref{tab:gen}): the spline inductive bias is sample-efficient and
+extends smoothly beyond the training support. Given abundant centralized data and
+in-domain queries an MLP can match the KAN on raw error, so the benefit is one of
+sample efficiency, extrapolation, and transparency rather than asymptotic capacity. Our oracle and channel model are simulation-based; closing
 the loop on measured LEO traces and extending the decision to joint power and
 rate/sub-band allocation are natural next steps. Finally, the negative
 self-evolution result is specific to this low-data-per-slot federated setting and
