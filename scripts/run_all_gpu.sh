@@ -31,7 +31,7 @@ python -m pytest tests/ -q || echo "pytest issues (continuing)"
 echo "---- [1/3] headline (scaled, multi-seed) ----"
 python scripts/run_opt.py --seeds "$SEEDS" --n-nodes "$NODES" \
     --slots-per-pass "$SLOTS" --n-passes "$PASSES" --slot-samples "$SAMP" \
-    --csi-sigma "$CSI" --device "$DEV" --out results/opt.csv
+    --csi-sigma "$CSI" --device "$DEV" --log-every 40 --out results/opt.csv
 
 echo "---- [2/3] depth studies (generalization/pareto/scaling/capacity) ----"
 python scripts/run_studies.py

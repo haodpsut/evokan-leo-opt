@@ -43,6 +43,7 @@ def study_generalization(seeds=10, levels_train=(0.2, 1.0), level_test=3.0):
     st = op.feature_stats()
     out = {"kan": {"indom": [], "extrap": []}, "mlp": {"indom": [], "extrap": []}}
     for s in range(seeds):
+        print(f"   [generalization] seed {s+1}/{seeds}", flush=True)
         rng = np.random.default_rng(s)
         Xtr, ytr, *_ = _draw(rng, levels_train, 4000, st)
         Xin, yin, *_ = _draw(rng, levels_train, 1500, st)
@@ -82,6 +83,7 @@ def study_pareto(seeds=5, keeps=(0.1, 0.25, 0.5, 0.75, 1.0), **kw):
     pts = {k: {"bits": [], "nmse": []} for k in keeps}
     bandit = {"bits": [], "nmse": []}
     for s in range(seeds):
+        print(f"   [pareto] seed {s+1}/{seeds}", flush=True)
         for k in keeps:
             cfg = make_config("kan_full", seed=s, fixed_keep=k, **kw)
             res, _, _ = run_experiment(cfg)
@@ -95,6 +97,7 @@ def study_pareto(seeds=5, keeps=(0.1, 0.25, 0.5, 0.75, 1.0), **kw):
 def study_scaling(seeds=5, nodes=(4, 8, 12, 16, 20), **kw):
     out = {n: {"nmse": [], "bits": []} for n in nodes}
     for n in nodes:
+        print(f"   [scaling] n_nodes={n}", flush=True)
         for s in range(seeds):
             cfg = make_config("fedkan_opt", seed=s, n_nodes=n, **kw)
             res, _, _ = run_experiment(cfg)
@@ -106,6 +109,7 @@ def study_capacity(seeds=10, grids=(3, 5, 7, 9, 12)):
     st = op.feature_stats()
     out = {g: {"nmse": [], "params": 0} for g in grids}
     for gs in grids:
+        print(f"   [capacity] grid={gs}", flush=True)
         for s in range(seeds):
             rng = np.random.default_rng(s)
             Xtr, ytr, *_ = _draw(rng, (0.2, 1.0, 3.0), 4000, st)

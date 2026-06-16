@@ -27,6 +27,8 @@ def parse():
     p.add_argument("--grid-max", type=int, default=10)
     p.add_argument("--lr", type=float, default=0.01)
     p.add_argument("--csi-sigma", type=float, default=0.0)
+    p.add_argument("--log-every", type=int, default=0,
+                   help="print an in-run heartbeat every N logged slots (0=off)")
     p.add_argument("--out", default="results/opt.csv")
     p.add_argument("--logdir", default="results/logs")
     return p.parse_args()
@@ -48,14 +50,20 @@ def main():
                 w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
                 w.writeheader(); w.writerows(rows)
 
+    total = len(a.methods) * a.seeds
+    done = 0
     for method in a.methods:
         for seed in range(a.seeds):
+            done += 1
             cfg = make_config(method, seed=seed, **common)
+            print(f"[{done}/{total}] running {method} seed={seed} ...", flush=True)
             t0 = time.time()
             try:
-                res, log, model = run_experiment(cfg)
+                res, log, model = run_experiment(cfg, log_every=a.log_every,
+                                                 tag=f"{method}/s{seed}")
             except Exception as e:
-                import traceback; print(f"!! {method} s{seed} FAILED: {e}"); traceback.print_exc(); continue
+                import traceback; print(f"!! {method} s{seed} FAILED: {e}", flush=True)
+                traceback.print_exc(); continue
             rule_r2 = ""
             if cfg.model_type == "kan":
                 _, rule_r2 = extract_rules(model)
@@ -67,9 +75,9 @@ def main():
             rows.append(row); flush()
             np.savez(os.path.join(a.logdir, f"{method}_s{seed}.npz"),
                      **{k: np.array(v, dtype=object) for k, v in log.items()})
-            print(f"{method:12s} s{seed} nmse={res['final_nmse']:.4f} "
+            print(f"[{done}/{total}] {method:12s} s{seed} nmse={res['final_nmse']:.4f} "
                   f"gap={res['avg_gap']:.4f} bits={res['total_bits']:.2e} "
-                  f"ruleR2={rule_r2} ({row['time_s']}s)")
+                  f"ruleR2={rule_r2} ({row['time_s']}s)", flush=True)
 
     # summary
     import statistics as st

@@ -101,7 +101,7 @@ def _utility_gap(model, reg, cfg, device):
     return float(np.mean(np.clip(gap, 0, None)))
 
 
-def run_experiment(cfg: Config, verbose=False):
+def run_experiment(cfg: Config, verbose=False, log_every=0, tag=""):
     torch.manual_seed(cfg.seed)
     rng = np.random.default_rng(cfg.seed)
     stats = op.feature_stats(cfg.Pmax)
@@ -210,6 +210,8 @@ def run_experiment(cfg: Config, verbose=False):
         if verbose:
             print(f"t={t:3d} part={len(participants)} gap={gap_after:.4f} "
                   f"nmse={log['nmse'][-1]:.4f} grid={log['grid'][-1]} bits={total_bits}")
+        elif log_every and (len(log["slot"]) % log_every == 0):
+            print(f"   {tag} slot {t}/{T}  nmse={log['nmse'][-1]:.3f}", flush=True)
 
     # forgetting on recurring regimes: mean (max - final) NMSE
     forget = []
