@@ -41,14 +41,15 @@ def extract_rules(kan_model, n=400, x_range=(-2.0, 2.0)):
     """
     layer = kan_model.layers[0] if hasattr(kan_model, "layers") else kan_model.head.layers[0]
     in_features = layer.in_features
-    xs = torch.linspace(x_range[0], x_range[1], n)
+    dev = next(kan_model.parameters()).device      # build probes on the model's device
+    xs = torch.linspace(x_range[0], x_range[1], n, device=dev)
     rules, r2s = [], []
     for i in range(in_features):
         # probe edge i->(sum over outputs) by varying feature i, others at 0
-        X = torch.zeros(n, in_features)
+        X = torch.zeros(n, in_features, device=dev)
         X[:, i] = xs
         y = layer(X).sum(dim=1).cpu().numpy()   # aggregate response to feature i
-        name, r2, a, b = _fit_form(xs.numpy(), y)
+        name, r2, a, b = _fit_form(xs.cpu().numpy(), y)
         rules.append({"feature": i, "form": name, "r2": round(r2, 3),
                       "a": round(a, 4), "b": round(b, 4)})
         r2s.append(r2)
