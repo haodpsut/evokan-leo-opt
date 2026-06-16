@@ -4,3 +4,12 @@ __pycache__/
 *.npz
 !results/logs/.gitkeep
 .DS_Store
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/pg*.png
+paper/hi*.png
+paper/build*.log
+paper/bib.log
