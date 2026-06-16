@@ -6,6 +6,7 @@
 #   conda activate evokan
 #   bash scripts/run_all_gpu.sh
 set -u
+export PYTHONUNBUFFERED=1          # stream progress lines through tee in real time
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p results/logs
 TS="$(date +%Y%m%d_%H%M%S)"; LOG="results/run_gpu_${TS}.log"

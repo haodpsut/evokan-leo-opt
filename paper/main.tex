@@ -130,31 +130,80 @@ does and does not help (Sec.~\ref{sec:results}, \ref{sec:disc}).
 \end{itemize}
 
 \section{Related Work}
-\textbf{Learning to optimize} trains networks to emulate optimization solvers for
-wireless resource management~\cite{sun2018l2o}; prior art almost exclusively uses
-black-box MLPs/CNNs and does not address interpretability or non-stationary
-deployment. \textbf{KANs}~\cite{liu2024kan} and efficient
-implementations~\cite{blealtan2024efficientkan} have shown strong function-fitting
-and symbolic-extraction ability, but their use inside networked optimization is
-nascent. \textbf{Communication-efficient federated learning} reduces uplink via
-sparsification and quantization~\cite{mcmahan2017fedavg,li2020fedprox,shi2023kanfl};
-we add a learned controller that adapts sparsity to a budget. \textbf{Concept-drift
-adaptation}~\cite{gama2014drift} motivates online tracking; here the drift is the
-physical regime switching of an LEO pass~\cite{kodheli2021ntn}.
+\textbf{Learning to optimize (L2O) for wireless.} A growing line of work replaces
+iterative resource-allocation solvers by neural surrogates that map a problem
+instance to its solution: fully-connected networks for interference
+management~\cite{sun2018l2o}, deep unfolding of classical
+iterations~\cite{balatsoukas2019unfolding}, and graph neural networks that exploit
+the problem topology for scalable power control~\cite{shen2021gnn,eisen2020rgnn}.
+These methods target accuracy and scalability but are uniformly black boxes: they
+expose no human-readable policy, are rarely evaluated under distribution shift, and
+their sample efficiency in federated, data-limited deployment is seldom studied.
+Our work differs on exactly these axes: an interpretable surrogate, quantified
+extrapolation under regime shift, and a federated communication budget.
 
-\textbf{KANs in communications} are only beginning to be explored; their promise
-for our setting is twofold. First, the additive univariate-spline structure is a
-strong inductive bias for the smooth, low-dimensional solution maps that arise in
-resource allocation, which improves sample efficiency in the data-limited
-federated regime and, as we show, extrapolation to unseen operating points.
-Second, unlike a black-box MLP a trained KAN is a sum of inspectable
-one-dimensional curves, so the learned policy can be reduced to closed-form rules
-and audited, a property increasingly demanded of AI in
-networks~\cite{wang2019leoml}. Our contribution is to make these properties
-concrete and quantified for autonomous, non-stationary LEO resource optimization,
-and to delineate honestly where they do and do not help.
+\textbf{Kolmogorov--Arnold networks.} KANs place learnable univariate spline
+functions on network edges~\cite{liu2024kan}, with efficient
+implementations~\cite{blealtan2024efficientkan}. Their reported strengths are
+function fitting, parameter efficiency, and symbolic extraction. Their use inside
+networked optimization is nascent; we show the additive-spline bias is well matched
+to the smooth solution maps of resource allocation, yielding sample efficiency,
+graceful extrapolation, and rules that can be read off, while also delineating
+where the structure does \emph{not} help (self-evolution, abundant-data capacity).
+
+\textbf{Communication-efficient and federated learning for wireless.}
+FedAvg~\cite{mcmahan2017fedavg} and its proximal variant~\cite{li2020fedprox}
+underpin distributed training across terminals~\cite{niknam2020flwireless}; uplink
+is curtailed by sparsification and quantization~\cite{shi2023kanfl}. Existing
+schemes mostly fix the compression level; we instead let a contextual bandit learn
+the per-slot sparsity from a budget, realizing online the Lagrangian dual price of
+the communication constraint (Sec.~\ref{sec:decomp}).
+
+\textbf{Non-stationarity and continual learning.} Concept-drift adaptation and
+continual learning study models that track changing
+distributions~\cite{gama2014drift,delange2022continual}. Here the drift is physical:
+the elevation sweep and satellite handovers of an LEO
+pass~\cite{kodheli2021ntn,eom2020leo} switch the operating regime. We test whether
+\emph{growing} model capacity online (self-evolution) helps in this regime and
+report, transparently, that it does not, which sharpens the understanding of when
+evolutive capacity pays off.
+
+In short, our contribution is to bring interpretability, extrapolation, and
+budget-aware federation together for autonomous LEO resource optimization, and to
+characterize honestly where a KAN surrogate helps and where it does
+not~\cite{wang2019leoml}.
 
 \section{System Model and Problem Formulation}\label{sec:model}
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[font=\small,>=latex,node distance=4mm,
+  blk/.style={draw,rounded corners,align=center,minimum height=8mm,inner sep=3pt},
+  leo/.style={blk,fill=gray!12,text=black},
+  inn/.style={blk,fill=green!10,text=black},
+  octrl/.style={blk,fill=orange!15,text=black},
+  srv/.style={blk,fill=blue!8,text=black}]
+\node[leo] (leo) {LEO pass\\elevation sweep\\$+$ handovers};
+\node[blk,fill=gray!4,right=7mm of leo] (state) {terminal $n$\\state $\hat s_{n,t}$\\$(\hat g,I,p_0)$};
+\node[inn,right=7mm of state] (kan) {KAN surrogate\\$\hat p_\theta$ (inner)};
+\node[blk,fill=gray!4,right=7mm of kan] (act) {power\\$\hat p_{n,t}$};
+\node[octrl,below=7mm of kan] (band) {bandit ctrl.\\$\kappa_t$ (outer)};
+\node[srv,left=7mm of band] (srv) {server\\sparse FedAvg\\$\theta_t$};
+\draw[->] (leo) -- node[above,font=\scriptsize]{drift $\mathcal D_t$} (state);
+\draw[->] (state) -- (kan);
+\draw[->] (kan) -- (act);
+\draw[->] (kan) -- node[right,font=\scriptsize]{$\Delta\theta_{n,t}$} (band);
+\draw[->] (band) -- node[above,font=\scriptsize]{$\kappa_t|\theta|$ bits} (srv);
+\draw[->] (srv.west) -| node[near start,below,font=\scriptsize]{broadcast $\theta_{t-1}$} ([xshift=-4mm]state.west) |- (state.west);
+\end{tikzpicture}}
+\caption{System and information flow. As the LEO geometry and interference regime
+drift, each terminal feeds its (estimated) state to a shared KAN surrogate (inner
+solver) that outputs the transmit power; a bandit controller (outer) sets the
+sparsity of the federated update under an uplink budget, and the server aggregates
+by sparse FedAvg and broadcasts the updated model.}
+\label{fig:system}
+\end{figure}
 
 \subsection{Network, channel, and interference model}
 A set $\mathcal{N}=\{1,\dots,N\}$ of gateway/UAV terminals is served by an LEO
@@ -427,6 +476,29 @@ linear                 & \LInmse & \LIreg & \LIbits & --   & \LIpar \\
 \caption{NMSE (mean$\pm$std, ten seeds). Both KAN variants are well below the MLPs.}
 \label{fig:bar}
 \end{figure}
+
+\subsection{Ablation analysis}
+Because each variant changes exactly one component of (P1) (Table~\ref{tab:abl}),
+the differences in Table~\ref{tab:main} attribute effects causally rather than
+correlationally.
+\emph{Surrogate class (KAN vs.\ MLP).} \texttt{kan\_full} and \texttt{mlp} share the
+parameter budget, the federated schedule, the training budget, and the data; they
+differ only in the inner model. The NMSE gap ($\KFnmse$ vs.\ $\MLnmse$) is therefore
+attributable to the additive-spline inductive bias, not to capacity or optimization
+effort.
+\emph{Nonlinearity.} Replacing the inner model by a linear map collapses accuracy
+(NMSE $\LInmse$), so the solution map genuinely requires a nonlinear learner; the
+KAN advantage is not an artifact of an easy problem.
+\emph{Outer controller.} \texttt{fedkan\_opt} and \texttt{kan\_full} share the
+identical KAN inner model and differ only by the bandit sparsifier; the move from
+$\KFbits$ to $\FObits$\,Mb at a small NMSE change isolates the
+communication--accuracy trade-off to the controller, not the surrogate.
+\emph{FL heterogeneity.} The proximal term (\texttt{mlp\_prox} vs.\ \texttt{mlp})
+does not close the gap to the KAN, indicating the deficit is the model class rather
+than the federated-averaging algorithm.
+\emph{Self-evolution.} \texttt{kan\_evolve} differs from \texttt{fedkan\_opt} only by
+online grid growth; it does not improve accuracy (analyzed next), isolating
+self-evolution as the inactive factor in this regime.
 
 \subsection{Online behavior under drift}
 Fig.~\ref{fig:ts} tracks the global NMSE across slots as interference regimes
