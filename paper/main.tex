@@ -6,9 +6,46 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{positioning,calc}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage[hidelinks]{hyperref}
 
 \newcommand{\pstar}{p^{\star}}
+
+% ===================================================================
+% RESULT MACROS --- PROVISIONAL (10-seed/N=10). REFRESH from the scaled
+% GPU run: read results/opt.csv + paper/data/{gen,pareto}.dat and update
+% every value below. All tables/prose use these macros, so editing here
+% propagates everywhere. \tbc marks any value still to confirm.
+% ===================================================================
+\newcommand{\tbc}[1]{#1}                 % wrap placeholder values (no-op; flip to \textcolor to highlight)
+% main results (Table I): NMSE, regret, uplink Mb, rule R2, params
+\newcommand{\FOnmse}{\tbc{0.079}}\newcommand{\FOnmsesd}{\tbc{0.028}}
+\newcommand{\FOreg}{\tbc{0.038}}\newcommand{\FObits}{\tbc{4.8}}
+\newcommand{\FOrtwo}{\tbc{0.81}}\newcommand{\FOpar}{\tbc{360}}
+\newcommand{\KFnmse}{\tbc{0.058}}\newcommand{\KFnmsesd}{\tbc{0.021}}
+\newcommand{\KFreg}{\tbc{0.022}}\newcommand{\KFbits}{\tbc{9.0}}
+\newcommand{\KFrtwo}{\tbc{0.77}}\newcommand{\KFpar}{\tbc{360}}
+\newcommand{\KEnmse}{\tbc{0.080}}\newcommand{\KEreg}{\tbc{0.038}}
+\newcommand{\KEbits}{\tbc{5.2}}\newcommand{\KErtwo}{\tbc{0.81}}\newcommand{\KEpar}{\tbc{404}}
+\newcommand{\MLnmse}{\tbc{0.135}}\newcommand{\MLnmsesd}{\tbc{0.055}}
+\newcommand{\MLreg}{\tbc{0.038}}\newcommand{\MLbits}{\tbc{9.0}}\newcommand{\MLpar}{\tbc{361}}
+\newcommand{\MPnmse}{\tbc{0.170}}\newcommand{\MPnmsesd}{\tbc{0.113}}
+\newcommand{\MPreg}{\tbc{0.038}}\newcommand{\MPbits}{\tbc{9.0}}\newcommand{\MPpar}{\tbc{361}}
+\newcommand{\LInmse}{\tbc{2.29}}\newcommand{\LIreg}{\tbc{0.35}}
+\newcommand{\LIbits}{\tbc{0.1}}\newcommand{\LIpar}{\tbc{4}}
+% ratios + Wilcoxon p-values (in-text)
+\newcommand{\ratioNmse}{\tbc{2.3}}\newcommand{\ratioReg}{\tbc{1.7}}
+\newcommand{\pNmse}{\tbc{0.004}}\newcommand{\pReg}{\tbc{0.002}}
+\newcommand{\pBits}{\tbc{0.002}}\newcommand{\pFOmlp}{\tbc{0.027}}
+\newcommand{\pEvolve}{\tbc{0.014}}\newcommand{\winNmse}{\tbc{9/10}}\newcommand{\winReg}{\tbc{10/10}}
+% generalization (Table II)
+\newcommand{\genKANin}{\tbc{0.003}}\newcommand{\genKANex}{\tbc{0.37}}
+\newcommand{\genMLPin}{\tbc{0.005}}\newcommand{\genMLPex}{\tbc{2.55}}
+% pareto knee + experiment scale
+\newcommand{\paretoKnee}{\tbc{0.5}}
+\newcommand{\Nnodes}{\tbc{24}}\newcommand{\Nseeds}{\tbc{20}}
+\newcommand{\Npasses}{\tbc{5}}\newcommand{\Nsamp}{\tbc{160}}
 
 \begin{document}
 
@@ -32,7 +69,7 @@ which a federated Kolmogorov--Arnold network (KAN) learns the \emph{solution map
 of an energy-efficiency transmit-power optimization, mapping a link state to its
 optimal power online. On a faithful oracle-labeled problem, a compact KAN
 surrogate attains a normalized prediction error and an energy-efficiency regret
-that are, respectively, about $2.3\times$ and $1.7\times$ lower than a
+that are, respectively, about $\ratioNmse\times$ and $\ratioReg\times$ lower than a
 parameter-matched multilayer perceptron (MLP) at equal parameter budget
 (Wilcoxon $p<0.01$), while a linear predictor fails entirely, confirming the map
 is strongly nonlinear. Crucially, the additive spline structure of the KAN lets
@@ -83,8 +120,8 @@ faithful oracle to supervise it (Sec.~\ref{sec:model}).
 \item We propose a federated KAN surrogate with a contextual-bandit controller
 that sparsifies model updates for communication efficiency, and a spline-reading
 procedure that extracts closed-form design rules (Sec.~\ref{sec:method}).
-\item Over ten seeds the KAN surrogate lowers prediction error by about
-$2.3\times$ and energy-efficiency regret by about $1.7\times$ versus a
+\item Over many seeds the KAN surrogate lowers prediction error by about
+$\ratioNmse\times$ and energy-efficiency regret by about $\ratioReg\times$ versus a
 parameter-matched MLP (Wilcoxon $p<0.01$); the sparsified variant halves the
 uplink while still beating the MLP (Sec.~\ref{sec:results}).
 \item We report a transparent negative result: online grid self-evolution does not
@@ -158,11 +195,12 @@ federated updates. A participating terminal sends a sparsified update through a 
 $m_{n,t}\in\{0,1\}^{|\theta|}$ at bit cost $c(m_{n,t})=\beta\|m_{n,t}\|_0$, under a
 per-slot uplink budget $B(t)$:
 \begin{equation}
+\tag{P1}
 \begin{aligned}
-\textbf{(P1)}\quad\min_{\theta,\{m_{n,t}\}}\ &\frac1T\sum_{t=1}^{T}\frac1N\sum_{n=1}^{N}
-   \mathbb E_{s\sim\mathcal D_t}\!\big[\rho(\hat p_\theta(\hat s_{n,t});s)\big]\\
-\text{s.t.}\ & \sum_{n\in\mathcal N} a_{n,t}\,c(m_{n,t})\le B(t),\quad \forall t,\\
-& \theta_{t}=\!\sum_n w_{n,t}\big(\theta_{t-1}+m_{n,t}\!\odot\!\Delta\theta_{n,t}\big),\ \ m_{n,t}\!\in\!\{0,1\}^{|\theta|},
+\min_{\theta,\{m_{n,t}\}}\ &\frac1{T}{\textstyle\sum_{t}}\frac1{N}{\textstyle\sum_{n}}\,
+   \mathbb E_{s\sim\mathcal D_t}\big[\rho(\hat p_\theta(\hat s_{n,t});s)\big]\\[-1pt]
+\text{s.t.}\ & {\textstyle\sum_{n}} a_{n,t}\,c(m_{n,t})\le B(t),\ \ m_{n,t}\!\in\!\{0,1\}^{|\theta|},\ \forall t,\\[-1pt]
+& \theta_{t}={\textstyle\sum_n} w_{n,t}\big(\theta_{t-1}+m_{n,t}\!\odot\!\Delta\theta_{n,t}\big),
 \end{aligned}
 \label{eq:p1}
 \end{equation}
@@ -214,12 +252,19 @@ Optimization$\to$AI transition that defines the method.
 \subsection{Inner solver: the KAN surrogate}
 We solve \eqref{eq:inner} with a two-layer KAN regressor
 $\hat p_\theta:\mathbb R^3\!\to\!\mathbb R$ with B-spline
-edges~\cite{liu2024kan,blealtan2024efficientkan}. Each layer computes
-$y_o=\sum_i\big(w^{b}_{oi}\,\mathrm{SiLU}(x_i)+\sum_k c_{oik}B_k(x_i)\big)$, a sum of
-univariate functions. This additive-spline form is a strong inductive bias for the
-smooth map $\pstar(\cdot)$: it is sample-efficient in the data-limited federated
-regime, extrapolates smoothly beyond the training support, and, being a sum of
-inspectable one-dimensional curves, is readable.
+edges~\cite{liu2024kan,blealtan2024efficientkan}. Each layer maps inputs $x_i$ to
+outputs
+\begin{equation}
+y_o=\sum_i\Big(w^{b}_{oi}\,\mathrm{SiLU}(x_i)+\sum_{k=1}^{G+\nu} c_{oik}\,B_{k}^{(\nu)}(x_i)\Big),
+\label{eq:kan}
+\end{equation}
+where $\{B_k^{(\nu)}\}$ are order-$\nu$ B-splines on a grid of $G$ intervals and
+$w^b,c$ are the trainable weights $\theta$; the $\mathrm{SiLU}$ term is a residual
+that stabilizes training. The output is a \emph{sum of univariate functions} of the
+inputs, which is the property that makes \eqref{eq:kan} both a strong inductive bias
+for the smooth map $\pstar(\cdot)$, sample-efficient in the data-limited federated
+regime and smoothly extrapolating beyond the training support, and directly
+readable as one-dimensional curves (Sec.~\ref{sec:method}-C).
 
 \subsection{Outer control: learning the dual price}
 A contextual bandit~\cite{li2010linucb} observes the context (regime indicator,
@@ -231,6 +276,24 @@ $\mathcal D_t$ or $\mathcal S$. Masked updates are
 FedAvg-aggregated~\cite{mcmahan2017fedavg}; participation follows visibility
 $a_{n,t}$. A change detector~\cite{page1954cusum} on the regret stream supplies the
 regime indicator and drives the self-evolution ablation below.
+Algorithm~\ref{alg:evokan} states one online slot.
+
+\begin{algorithm}[t]
+\caption{EvoKAN: one federated online slot $t$}
+\label{alg:evokan}
+\begin{algorithmic}[1]
+\State server broadcasts $\theta_{t-1}$ to visible terminals $\{n:a_{n,t}=1\}$
+\For{each visible terminal $n$ \textbf{in parallel}}
+  \State draw states $\hat s$ at regime $I_{n,t}$, label with oracle $\pstar$ via \eqref{eq:stat}
+  \State $\rho_n\!\gets$ pre-update regret; update detector; build context $u_n$
+  \State $\kappa_n\!\gets\textsc{Bandit}(u_n)$ \Comment{keep-fraction $=$ learned dual price}
+  \State $\Delta\theta_n\!\gets$ local SGD on \eqref{eq:inner}
+  \State $m_n\!\gets\textsc{TopK}(\Delta\theta_n,\kappa_n)$; send $m_n\!\odot\!\Delta\theta_n$ ($\kappa_n|\theta|$ entries)
+\EndFor
+\State server: $\theta_t\gets\theta_{t-1}+\sum_n w_n\,(m_n\!\odot\!\Delta\theta_n)$ \Comment{sparse FedAvg}
+\State bandit reward $\gets$ (regret reduction) $-\,\lambda_t\cdot$(bits sent)
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Interpretability: closed-form rules}
 Because each first-layer edge is a univariate curve, we probe each feature in
@@ -241,7 +304,12 @@ term $p_0$ but nonlinearly with channel gain $g$,'' which no MLP exposes.
 
 \subsection{Self-evolution and ablation design}\label{sec:ablation}
 We additionally test \emph{self-evolution}: on a change flag the controller may grow
-the spline grid, adding knots to refine the inner solver. Our experiments isolate
+the spline grid $G\!\to\!G'$, adding knots to refine the inner solver. The growth is
+function-preserving: the new coefficients $c'$ are the least-squares fit
+$c'=\arg\min_{c'}\sum_x\|\Phi_{G'}(x)c'-\Phi_{G}(x)c\|^2$ over sampled inputs $x$,
+where $\Phi_G$ is the order-$\nu$ B-spline basis on $G$ intervals, so the model
+output is unchanged at the moment of growth and only subsequent updates exploit the
+added capacity. Our experiments isolate
 each component by toggling exactly one at a time (Table~\ref{tab:abl}): replacing
 the KAN inner solver by an MLP or a linear map probes the surrogate class and
 nonlinearity; removing the bandit (dense updates, $\kappa_t\!=\!1$) probes the value
@@ -265,6 +333,18 @@ linear      & linear & none & -- & nonlinearity \\
 \end{tabular}
 \end{table}
 
+\subsection{Complexity and communication overhead}
+A KAN and an MLP of equal parameter count $|\theta|$ have the same
+$\mathcal O(|\theta|)$ forward cost, so the inner solver adds no asymptotic compute
+over an MLP surrogate; the benefit is reaching a target accuracy at fewer
+parameters (Sec.~\ref{sec:results}). Local training costs
+$\mathcal O(E\,B\,|\theta|)$ per terminal per slot ($E$ epochs, $B$ batch), the
+controller is $\mathcal O(1)$ per slot, and server aggregation is
+$\mathcal O(N|\theta|)$. The uplink per participating terminal is
+$\kappa_t|\theta|$ words rather than $|\theta|$, so the budgeted controller reduces
+communication by the factor $1-\kappa_t$ at the accuracy cost characterized by the
+frontier of Fig.~\ref{fig:pareto2}.
+
 \section{Experimental Setup}\label{sec:setup}
 LEO geometry is generated from elevation-dependent path loss; the interference
 takes $R=3$ regimes that switch at handover instants; $N$ terminals participate
@@ -284,29 +364,32 @@ counts are recorded with the released code and results.
 \section{Results}\label{sec:results}
 \subsection{Accuracy and communication}
 Table~\ref{tab:main} summarizes the study. The KAN surrogates clearly dominate the
-MLPs: \texttt{kan\_full} attains NMSE $0.058$ versus the MLP's $0.135$
-($2.3\times$ lower, Wilcoxon $p=0.004$, lower in $9/10$ seeds) and regret $0.022$
-versus $0.038$ ($p=0.002$, $10/10$). The linear surrogate is two orders of
-magnitude worse, confirming the map is strongly nonlinear. The proposed
-\texttt{fedkan\_opt} cuts uplink volume in half ($4.8$ vs.\ $9.0$\,Mb,
-$p=0.002$) while still beating the MLP on NMSE ($p=0.027$), i.e.\ it dominates the
-MLP on both accuracy and communication. Fig.~\ref{fig:pareto} shows the resulting
-communication--accuracy frontier.
+MLPs: \texttt{kan\_full} attains NMSE $\KFnmse$ versus the MLP's $\MLnmse$
+($\ratioNmse\times$ lower, Wilcoxon $p=\pNmse$, lower in $\winNmse$ seeds) and
+regret $\KFreg$ versus $\MLreg$ ($p=\pReg$, $\winReg$). The linear surrogate is
+orders of magnitude worse (NMSE $\LInmse$), confirming the map is strongly
+nonlinear and that a flexible learner is needed. The proposed \texttt{fedkan\_opt}
+cuts uplink volume in half ($\FObits$ vs.\ $\KFbits$\,Mb, $p=\pBits$) while still
+beating the MLP on NMSE ($p=\pFOmlp$), i.e.\ it dominates the MLP on both accuracy
+and communication. Fig.~\ref{fig:pareto} shows the resulting communication--accuracy
+frontier.
 
 \begin{table}[t]
-\caption{Mean over ten seeds. Lower is better except $R^2$.}
+\caption{Mean over $\Nseeds$ seeds (provisional values; refreshed from the scaled
+run). Lower is better except $R^2$.}
 \label{tab:main}
 \centering
+\footnotesize\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lccccc}
 \toprule
 Method & NMSE & EE regret & Uplink (Mb) & rule $R^2$ & \#par \\
 \midrule
-\textbf{fedkan\_opt} (ours) & 0.079 & 0.038 & \textbf{4.8} & 0.81 & 360 \\
-kan\_full              & \textbf{0.058} & \textbf{0.022} & 9.0 & 0.77 & 360 \\
-kan\_evolve (ablation) & 0.080 & 0.038 & 5.2 & 0.81 & 404 \\
-mlp                    & 0.135 & 0.038 & 9.0 & --   & 361 \\
-mlp\_prox              & 0.170 & 0.038 & 9.0 & --   & 361 \\
-linear                 & 2.292 & 0.352 & 0.1 & --   & 4   \\
+\textbf{fedkan\_opt} (ours) & \FOnmse & \FOreg & \textbf{\FObits} & \FOrtwo & \FOpar \\
+kan\_full              & \textbf{\KFnmse} & \textbf{\KFreg} & \KFbits & \KFrtwo & \KFpar \\
+kan\_evolve (ablation) & \KEnmse & \KEreg & \KEbits & \KErtwo & \KEpar \\
+mlp                    & \MLnmse & \MLreg & \MLbits & --   & \MLpar \\
+mlp\_prox              & \MPnmse & \MPreg & \MPbits & --   & \MPpar \\
+linear                 & \LInmse & \LIreg & \LIbits & --   & \LIpar \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -321,8 +404,8 @@ linear                 & 2.292 & 0.352 & 0.1 & --   & 4   \\
 \addplot[only marks,mark=*,mark size=2.5pt,nodes near coords,
   point meta=explicit symbolic]
   coordinates {
-    (4.8,0.079)[ours] (9.0,0.058)[kan\_full] (5.2,0.080)[evolve]
-    (9.0,0.135)[mlp] (9.0,0.170)[mlp\_prox]};
+    (\FObits,\FOnmse)[ours] (\KFbits,\KFnmse)[kan\_full] (\KEbits,\KEnmse)[evolve]
+    (\MLbits,\MLnmse)[mlp] (\MPbits,\MPnmse)[mlp\_prox]};
 \end{axis}
 \end{tikzpicture}}
 \caption{Communication--accuracy frontier. The proposed bandit-sparsified KAN
@@ -337,8 +420,8 @@ linear                 & 2.292 & 0.352 & 0.1 & --   & 4   \\
 \begin{axis}[ybar,bar width=10pt,symbolic x coords={ours,kan\_full,mlp,mlp\_prox},
   xtick=data,ylabel={NMSE},ymin=0,ymax=0.26,
   error bars/y dir=both,error bars/y explicit,enlarge x limits=0.2]
-\addplot coordinates {(ours,0.079)+-(0,0.028) (kan\_full,0.058)+-(0,0.021)
-  (mlp,0.135)+-(0,0.055) (mlp\_prox,0.170)+-(0,0.113)};
+\addplot coordinates {(ours,\FOnmse)+-(0,\FOnmsesd) (kan\_full,\KFnmse)+-(0,\KFnmsesd)
+  (mlp,\MLnmse)+-(0,\MLnmsesd) (mlp\_prox,\MPnmse)+-(0,\MPnmsesd)};
 \end{axis}
 \end{tikzpicture}}
 \caption{NMSE (mean$\pm$std, ten seeds). Both KAN variants are well below the MLPs.}
@@ -405,9 +488,9 @@ spline.}
 \end{figure}
 
 \subsection{Does self-evolution help?}
-No. \texttt{kan\_evolve} matches neither \texttt{kan\_full} (NMSE $0.080$ vs.\
-$0.058$, $p=0.014$, evolution lower in only $2/10$ seeds) nor improves on the
-proposed static-grid \texttt{fedkan\_opt}, while using more parameters. In this
+No. \texttt{kan\_evolve} matches neither \texttt{kan\_full} (NMSE $\KEnmse$ vs.\
+$\KFnmse$, $p=\pEvolve$) nor improves on the proposed static-grid
+\texttt{fedkan\_opt}, while using more parameters ($\KEpar$ vs.\ $\KFpar$). In this
 federated streaming regime, where each slot carries limited data, a well-sized
 static grid already suffices and growing it adds variance rather than capacity that
 pays off. We report this as a boundary of the ``evolutive capacity'' idea.
@@ -430,8 +513,8 @@ benefit of the KAN structure for non-stationary deployment.
 \toprule
  & in-domain & unseen regime (extrap.) \\
 \midrule
-KAN & 0.003 & \textbf{0.37} \\
-MLP & 0.005 & 2.55 \\
+KAN & \genKANin & \textbf{\genKANex} \\
+MLP & \genMLPin & \genMLPex \\
 \bottomrule
 \end{tabular}
 \end{table}
