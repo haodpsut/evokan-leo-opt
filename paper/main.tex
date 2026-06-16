@@ -23,26 +23,26 @@
 % ===================================================================
 \newcommand{\tbc}[1]{#1}                 % wrap placeholder values (no-op; flip to \textcolor to highlight)
 % main results (Table I): NMSE, regret, uplink Mb, rule R2, params
-\newcommand{\FOnmse}{\tbc{0.079}}\newcommand{\FOnmsesd}{\tbc{0.028}}
-\newcommand{\FOreg}{\tbc{0.038}}\newcommand{\FObits}{\tbc{4.8}}
-\newcommand{\FOrtwo}{\tbc{0.81}}\newcommand{\FOpar}{\tbc{360}}
-\newcommand{\KFnmse}{\tbc{0.058}}\newcommand{\KFnmsesd}{\tbc{0.021}}
-\newcommand{\KFreg}{\tbc{0.022}}\newcommand{\KFbits}{\tbc{9.0}}
-\newcommand{\KFrtwo}{\tbc{0.77}}\newcommand{\KFpar}{\tbc{360}}
-\newcommand{\KEnmse}{\tbc{0.080}}\newcommand{\KEreg}{\tbc{0.038}}
-\newcommand{\KEbits}{\tbc{5.2}}\newcommand{\KErtwo}{\tbc{0.81}}\newcommand{\KEpar}{\tbc{404}}
-\newcommand{\MLnmse}{\tbc{0.135}}\newcommand{\MLnmsesd}{\tbc{0.055}}
-\newcommand{\MLreg}{\tbc{0.038}}\newcommand{\MLbits}{\tbc{9.0}}\newcommand{\MLpar}{\tbc{361}}
-\newcommand{\MPnmse}{\tbc{0.170}}\newcommand{\MPnmsesd}{\tbc{0.113}}
-\newcommand{\MPreg}{\tbc{0.038}}\newcommand{\MPbits}{\tbc{9.0}}\newcommand{\MPpar}{\tbc{361}}
-\newcommand{\LInmse}{\tbc{2.29}}\newcommand{\LIreg}{\tbc{0.35}}
-\newcommand{\LIbits}{\tbc{0.1}}\newcommand{\LIpar}{\tbc{4}}
-% ratios + Wilcoxon p-values (in-text)
-\newcommand{\ratioNmse}{\tbc{2.3}}\newcommand{\ratioReg}{\tbc{1.7}}
-\newcommand{\pNmse}{\tbc{0.004}}\newcommand{\pReg}{\tbc{0.002}}
-\newcommand{\pBits}{\tbc{0.002}}\newcommand{\pFOmlp}{\tbc{0.027}}
-\newcommand{\pEvolve}{\tbc{0.014}}\newcommand{\winNmse}{\tbc{9/10}}\newcommand{\winReg}{\tbc{10/10}}
-% generalization (Table II)
+\newcommand{\FOnmse}{0.052}\newcommand{\FOnmsesd}{0.013}
+\newcommand{\FOreg}{0.020}\newcommand{\FObits}{16.6}
+\newcommand{\FOrtwo}{0.79}\newcommand{\FOpar}{360}
+\newcommand{\KFnmse}{0.041}\newcommand{\KFnmsesd}{0.012}
+\newcommand{\KFreg}{0.010}\newcommand{\KFbits}{33.1}
+\newcommand{\KFrtwo}{0.77}\newcommand{\KFpar}{360}
+\newcommand{\KEnmse}{0.048}\newcommand{\KEreg}{0.019}
+\newcommand{\KEbits}{21.2}\newcommand{\KErtwo}{0.76}\newcommand{\KEpar}{542}
+\newcommand{\MLnmse}{0.073}\newcommand{\MLnmsesd}{0.040}
+\newcommand{\MLreg}{0.022}\newcommand{\MLbits}{33.2}\newcommand{\MLpar}{361}
+\newcommand{\MPnmse}{0.078}\newcommand{\MPnmsesd}{0.035}
+\newcommand{\MPreg}{0.021}\newcommand{\MPbits}{33.2}\newcommand{\MPpar}{361}
+\newcommand{\LInmse}{2.29}\newcommand{\LIreg}{0.30}
+\newcommand{\LIbits}{0.37}\newcommand{\LIpar}{4}
+% ratios + Wilcoxon p-values (in-text), 20 seeds
+\newcommand{\ratioNmse}{1.8}\newcommand{\ratioReg}{2.2}
+\newcommand{\pNmse}{0.004}\newcommand{\pReg}{0.001}
+\newcommand{\pBits}{0.001}\newcommand{\pFOmlp}{0.027}
+\newcommand{\pEvolve}{0.13}\newcommand{\winNmse}{14/20}\newcommand{\winReg}{19/20}
+% generalization (Table II) -- refresh after studies finish
 \newcommand{\genKANin}{\tbc{0.003}}\newcommand{\genKANex}{\tbc{0.37}}
 \newcommand{\genMLPin}{\tbc{0.005}}\newcommand{\genMLPex}{\tbc{2.55}}
 % extracted-rule forms + per-feature fidelity (kan_full)
@@ -541,8 +541,8 @@ and communication. Fig.~\ref{fig:pareto} shows the resulting communication--accu
 frontier.
 
 \begin{table}[t]
-\caption{Mean over $\Nseeds$ seeds (provisional values; refreshed from the scaled
-run). Lower is better except $R^2$.}
+\caption{Headline results, mean over $\Nseeds$ seeds at $N=\Nnodes$ terminals.
+Lower is better except $R^2$.}
 \label{tab:main}
 \centering
 \footnotesize\setlength{\tabcolsep}{3.5pt}
@@ -565,7 +565,7 @@ linear                 & \LInmse & \LIreg & \LIbits & --   & \LIpar \\
 \resizebox{0.92\columnwidth}{!}{%
 \begin{tikzpicture}
 \begin{axis}[xlabel={Uplink volume (Mb)},ylabel={NMSE of $\hat p$ vs.\ $\pstar$},
-  xmin=0,xmax=10,ymin=0,ymax=0.2,grid=both,
+  xmin=10,xmax=40,ymin=0,ymax=0.11,grid=both,
   every node near coord/.append style={font=\scriptsize,anchor=west}]
 \addplot[only marks,mark=*,mark size=2.5pt,nodes near coords,
   point meta=explicit symbolic]
@@ -584,13 +584,13 @@ linear                 & \LInmse & \LIreg & \LIbits & --   & \LIpar \\
 \resizebox{0.92\columnwidth}{!}{%
 \begin{tikzpicture}
 \begin{axis}[ybar,bar width=10pt,symbolic x coords={ours,kan\_full,mlp,mlp\_prox},
-  xtick=data,ylabel={NMSE},ymin=0,ymax=0.26,
+  xtick=data,ylabel={NMSE},ymin=0,ymax=0.13,
   error bars/y dir=both,error bars/y explicit,enlarge x limits=0.2]
 \addplot coordinates {(ours,\FOnmse)+-(0,\FOnmsesd) (kan\_full,\KFnmse)+-(0,\KFnmsesd)
   (mlp,\MLnmse)+-(0,\MLnmsesd) (mlp\_prox,\MPnmse)+-(0,\MPnmsesd)};
 \end{axis}
 \end{tikzpicture}}
-\caption{NMSE (mean$\pm$std, ten seeds). Both KAN variants are well below the MLPs.}
+\caption{NMSE (mean$\pm$std, \Nseeds{} seeds). Both KAN variants are well below the MLPs.}
 \label{fig:bar}
 \end{figure}
 
@@ -732,12 +732,14 @@ read directly off the trained model.}
 \end{figure*}
 
 \subsection{Does self-evolution help?}
-No. \texttt{kan\_evolve} matches neither \texttt{kan\_full} (NMSE $\KEnmse$ vs.\
-$\KFnmse$, $p=\pEvolve$) nor improves on the proposed static-grid
-\texttt{fedkan\_opt}, while using more parameters ($\KEpar$ vs.\ $\KFpar$). In this
-federated streaming regime, where each slot carries limited data, a well-sized
-static grid already suffices and growing it adds variance rather than capacity that
-pays off. We report this as a boundary of the ``evolutive capacity'' idea.
+No. Growing the spline grid online gives no significant accuracy gain:
+\texttt{kan\_evolve} is statistically indistinguishable from the static-grid
+\texttt{kan\_full} (NMSE $\KEnmse$ vs.\ $\KFnmse$, Wilcoxon $p=\pEvolve$, not
+significant) and does not improve on the proposed \texttt{fedkan\_opt}, all while
+using more parameters ($\KEpar$ vs.\ $\KFpar$). In this federated streaming regime,
+where each slot carries limited data, a well-sized static grid already suffices and
+growing it adds variance and cost rather than capacity that pays off. We report
+this as a boundary of the ``evolutive capacity'' idea.
 
 \subsection{Generalization to unseen interference regimes}
 A surrogate deployed on an LEO link will meet interference regimes absent from its
