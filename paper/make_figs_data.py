@@ -80,8 +80,44 @@ def rule_curves(model):
     open(os.path.join(DATA, "rules.txt"), "w").write("\n".join(lines) + "\n")
 
 
+def convergence():
+    """Multi-seed mean+-std NMSE-vs-slot from the saved per-run logs (results/logs).
+    Produces conv.dat for the convergence figure; falls back silently if no logs."""
+    import glob
+    logdir = os.path.join(HERE, "..", "results", "logs")
+    methods = ["fedkan_opt", "kan_full", "mlp"]
+    cols = {}
+    maxlen = 0
+    for m in methods:
+        per_slot = {}
+        for f in glob.glob(os.path.join(logdir, f"{m}_s*.npz")):
+            d = np.load(f, allow_pickle=True)
+            slots = list(d["slot"]); nm = list(d["nmse"])
+            for s, v in zip(slots, nm):
+                if v is None:
+                    continue
+                per_slot.setdefault(int(s), []).append(float(v))
+        if not per_slot:
+            print("convergence: no logs, skipped"); return
+        xs = sorted(per_slot)
+        cols[m] = (xs, [np.mean(per_slot[s]) for s in xs], [np.std(per_slot[s]) for s in xs])
+        maxlen = max(maxlen, max(xs) + 1)
+    with open(os.path.join(DATA, "conv.dat"), "w") as f:
+        f.write("slot fo fo_sd kf mlp\n")
+        for s in range(maxlen):
+            def val(m, i):
+                xs, mu, sd = cols[m]
+                return (mu[xs.index(s)], sd[xs.index(s)]) if s in xs else (None, None)
+            fo, fosd = val("fedkan_opt", 0); kf, _ = val("kan_full", 0); ml, _ = val("mlp", 0)
+            if fo is None or kf is None or ml is None:
+                continue
+            f.write("%d %.5f %.5f %.5f %.5f\n" % (s, fo, fosd, kf, ml))
+    print("wrote conv.dat")
+
+
 if __name__ == "__main__":
     summary()
     model = timeseries()
     rule_curves(model)
+    convergence()
     print("DONE")
