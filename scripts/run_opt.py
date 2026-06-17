@@ -27,6 +27,10 @@ def parse():
     p.add_argument("--grid-max", type=int, default=10)
     p.add_argument("--lr", type=float, default=0.01)
     p.add_argument("--csi-sigma", type=float, default=0.0)
+    p.add_argument("--heterogeneous", action="store_true",
+                   help="per-node g/p0 sub-ranges (non-IID); default homogeneous")
+    p.add_argument("--append", action="store_true",
+                   help="append to an existing --out CSV instead of overwriting")
     p.add_argument("--log-every", type=int, default=0,
                    help="print an in-run heartbeat every N logged slots (0=off)")
     p.add_argument("--out", default="results/opt.csv")
@@ -39,10 +43,16 @@ def main():
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     os.makedirs(a.logdir, exist_ok=True)
     rows = []
+    if a.append and os.path.exists(a.out):          # keep existing rows, append new runs
+        with open(a.out) as fh:
+            rows = [dict(r) for r in csv.DictReader(fh)]
+        keep_methods = set(a.methods)
+        rows = [r for r in rows if r.get("method") not in keep_methods]  # drop stale dups
+        print(f"append mode: {len(rows)} existing rows kept")
     common = dict(device=a.device, n_nodes=a.n_nodes, slots_per_pass=a.slots_per_pass,
                   n_passes=a.n_passes, epochs=a.epochs, slot_samples=a.slot_samples,
                   grid_size=a.grid_size, grid_max=a.grid_max, lr=a.lr,
-                  csi_sigma=a.csi_sigma)
+                  csi_sigma=a.csi_sigma, heterogeneous=a.heterogeneous)
 
     def flush():
         if rows:

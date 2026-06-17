@@ -39,7 +39,7 @@ class Config:
     interference_levels: tuple = (0.2, 1.0, 3.0)
     min_dwell: int = 8
     csi_sigma: float = 0.0           # log-normal CSI estimation error on the gain input
-    heterogeneous: bool = True       # per-node sub-ranges of (g, p0) -> non-IID federation
+    heterogeneous: bool = False      # per-node sub-ranges of (g, p0) -> non-IID (off by default; homogeneous headline)
     unfold_K: int = 15               # deep-unfolding steps for the L2O baseline
     # model
     model_type: str = "kan"          # kan | mlp

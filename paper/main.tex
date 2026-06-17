@@ -503,10 +503,10 @@ frontier of Fig.~\ref{fig:pareto2}.
 \section{Experimental Setup}\label{sec:setup}
 LEO geometry is generated from elevation-dependent path loss; the interference
 takes $R=3$ regimes that switch at handover instants; $N$ terminals participate
-over multiple passes with visibility gating. Terminals are \emph{heterogeneous}:
-each draws its link states from its own sub-range of channel gain and circuit
-power, so the local data are non-IID and federation is genuinely beneficial. Each
-slot draws oracle-labeled states (power solved to the optimizer~\eqref{eq:stat}).
+over multiple passes with visibility gating; each contributes its locally observed
+states to the shared surrogate under the uplink budget (a non-IID, heterogeneous
+split is supported by the code and left to future work). Each slot draws
+oracle-labeled states (power solved to the optimizer~\eqref{eq:stat}).
 Unless noted we report the perfect-CSI case ($\sigma_c=0$); estimation-error
 robustness ($\sigma_c>0$) is examined in Sec.~\ref{sec:results}. The model-free
 surrogates are parameter-matched and share the identical training budget so the
