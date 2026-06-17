@@ -666,15 +666,22 @@ the uplink) and halves the uplink of the dense \texttt{kan\_full}.}
 \centering
 \resizebox{0.86\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[ybar,bar width=14pt,symbolic x coords={ours,kan\_full,mlp,mlp\_prox},
-  xtick=data,ylabel={NMSE},ymin=0,ymax=0.135,enlarge x limits=0.22,
-  nodes near coords,every node near coords/.append style={font=\tiny},
+\begin{axis}[ybar,bar width=16pt,symbolic x coords={a,b,c,d},
+  xtick={a,b,c,d},xticklabels={ours,kan\_full,mlp,mlp\_prox},
+  xticklabel style={font=\small},
+  ylabel={NMSE},ymin=0,ymax=0.17,enlarge x limits=0.18,
+  ymajorgrids,grid style={gray!25},clip=false,
   error bars/y dir=both,error bars/y explicit,
   error bars/error bar style={cGray}]
-\addplot[fill=cOurs,draw=cOurs,bar shift=0pt] coordinates {(ours,\FOnmse)+-(0,\FOnmsesd)};
-\addplot[fill=cKanfull,draw=cKanfull,bar shift=0pt] coordinates {(kan\_full,\KFnmse)+-(0,\KFnmsesd)};
-\addplot[fill=cMlp,draw=cMlp,bar shift=0pt] coordinates {(mlp,\MLnmse)+-(0,\MLnmsesd)};
-\addplot[fill=cMlpp,draw=cMlpp,bar shift=0pt] coordinates {(mlp\_prox,\MPnmse)+-(0,\MPnmsesd)};
+\addplot[fill=cOurs,draw=cOurs,bar shift=0pt] coordinates {(a,\FOnmse)+-(0,\FOnmsesd)};
+\addplot[fill=cKanfull,draw=cKanfull,bar shift=0pt] coordinates {(b,\KFnmse)+-(0,\KFnmsesd)};
+\addplot[fill=cMlp,draw=cMlp,bar shift=0pt] coordinates {(c,\MLnmse)+-(0,\MLnmsesd)};
+\addplot[fill=cMlpp,draw=cMlpp,bar shift=0pt] coordinates {(d,\MPnmse)+-(0,\MPnmsesd)};
+% value labels placed above each error-bar cap (mean+std) so they never touch bars or caps
+\node[anchor=south,font=\small] at (axis cs:a,0.071) {0.052};
+\node[anchor=south,font=\small] at (axis cs:b,0.059) {0.041};
+\node[anchor=south,font=\small] at (axis cs:c,0.119) {0.073};
+\node[anchor=south,font=\small] at (axis cs:d,0.119) {0.078};
 \end{axis}
 \end{tikzpicture}}
 \caption{NMSE (mean$\pm$std, \Nseeds{} seeds). Both KAN variants
@@ -987,11 +994,11 @@ favourable $\sigma_c\!=\!0$ point.
 \centering
 \resizebox{0.9\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[ybar,bar width=9pt,symbolic x coords={0.2,1.0,3.0},xtick=data,
-  xlabel={interference regime $I$},ylabel={final NMSE},ymin=0,ymax=0.21,
-  enlarge x limits=0.3,nodes near coords,
-  every node near coords/.append style={font=\tiny,rotate=90,anchor=west},
-  legend columns=3,legend style={at={(0.5,1.02)},anchor=south}]
+\begin{axis}[ybar,bar width=13pt,symbolic x coords={0.2,1.0,3.0},xtick=data,
+  xlabel={interference regime $I$},ylabel={final NMSE},ymin=0,ymax=0.205,
+  enlarge x limits=0.32,ymajorgrids,grid style={gray!25},
+  legend columns=3,legend style={at={(0.5,1.03)},anchor=south,draw=gray!50,
+    font=\small,/tikz/every even column/.append style={column sep=8pt}}]
 \addplot[fill=cOurs,draw=cOurs] table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
 \addplot[fill=cKanfull,draw=cKanfull] table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
 \addplot[fill=cMlp,draw=cMlp] table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
