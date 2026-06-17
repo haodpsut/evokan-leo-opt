@@ -254,9 +254,8 @@ not~\cite{wang2019leoml}.
 \draw[flow] (kan) -- node[lbl,above]{$\hat p_{n,t}$} (act);
 \draw[flow] (kan) -- node[lbl,right]{$\Delta\theta_{n,t}$} (band);
 \draw[flow] (band) -- node[lbl,above]{$\kappa_t|\theta|$ bits} (srv);
-% broadcast feedback: drop below the row from the server and rise into the terminal
-\draw[flow] (srv.south) |- ([yshift=-9mm]band.south -| band)
-  node[lbl,pos=0.72,below]{broadcast $\theta_{t-1}$} -| (state.south);
+% broadcast feedback: server sits directly below the terminal -> clean vertical arrow
+\draw[flow] (srv.north) -- node[lbl,left]{broadcast $\theta_{t-1}$} (state.south);
 \end{tikzpicture}}
 \caption{System and information flow. As the LEO geometry and interference regime
 drift, each terminal feeds its (estimated) state to a shared KAN surrogate (inner
