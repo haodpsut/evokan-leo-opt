@@ -536,7 +536,45 @@ and every reported value is the mean over the seeds with its standard deviation;
 significance uses the paired Wilcoxon signed-rank test across seeds. The scale used
 for the headline ($N=\Nnodes$ terminals, $\Npasses$ passes, $\Nseeds$ seeds) and
 all hyper-parameters are fixed in the released configuration so the numbers are
-reproducible end to end.
+reproducible end to end. Table~\ref{tab:params} lists the full configuration.
+
+\begin{table}[t]
+\caption{Simulation and training configuration.}
+\label{tab:params}
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Satellite altitude / elevation mask & $550$\,km / $10^{\circ}$ \\
+Zenith reference SNR & $22$\,dB \\
+Interference regimes $\mathcal I$ & $\{0.2,\,1.0,\,3.0\}$, min dwell $8$ slots \\
+Channel gain / circuit power range & $g\!\in\![0.2,30]$, $p_0\!\in\![0.1,1]$ \\
+Max power $P_{\max}$ & $5$ \\
+Terminals $N$ / passes / seeds & $24$ / $5$ / $20$ \\
+Slots per pass / states per slot & $30$ / $160$ \\
+KAN: layers, hidden, grid $G$, order $\nu$ & $2$, $10$, $5$, $3$ ($\approx\!360$ par.) \\
+MLP / linear & param-matched / single linear \\
+Unfold steps $K$ & $15$ \\
+Optimizer, lr, local epochs & Adam, $0.01$, $6$ \\
+Bandit keep-fractions $\kappa$ & $\{0.25,0.5,1.0\}$ \\
+Drift detector (Page--Hinkley) & $\delta\!=\!0.005,\lambda\!=\!0.05$ \\
+Bits per word & $32$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\emph{Metrics.} Let $\pstar_i$ be the oracle power and $\hat p_i$ the prediction on
+a held-out set. We report the normalized MSE
+$\mathrm{NMSE}=\sum_i(\hat p_i-\pstar_i)^2/\sum_i(\pstar_i-\bar{\pstar})^2$; the mean
+relative energy-efficiency regret
+$\rho=\tfrac1M\sum_i[\mathrm{EE}(\pstar_i;s_i)-\mathrm{EE}(\hat p_i;s_i)]/\mathrm{EE}(\pstar_i;s_i)$;
+the total uplink words $\sum_{t,n}\kappa_t|\theta|$; the extracted-rule fidelity,
+the mean over inputs of the best single-basis $R^2$ (Sec.~\ref{sec:method}); and the
+detection delay, the mean number of slots between a true regime change in
+$\mathcal S$ and the next flag. Lower is better for all but $R^2$.
 
 \section{Results}\label{sec:results}
 \subsection{Accuracy and communication}
