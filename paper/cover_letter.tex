@@ -1,8 +1,7 @@
 \documentclass[11pt]{article}
-\usepackage[margin=0.85in]{geometry}
+\usepackage[margin=1in]{geometry}
 \usepackage{times}
 \usepackage{parskip}
-\setlength{\parskip}{4pt}
 \usepackage[hidelinks]{hyperref}
 \pagestyle{empty}
 
@@ -48,17 +47,36 @@ the additive-spline structure yields closed-form, auditable design rules that a
 black-box network cannot provide. We compare against a model-based deep-unfolding
 learn-to-optimize baseline and analyze each component through one-factor ablations.
 
-\textbf{Rigor and transparency.} All results are multi-seed with standard
-deviations and Wilcoxon tests, every comparison is parameter-matched, and we report
-transparently the cases where our method does \emph{not} help (online grid
-self-evolution gives no significant gain; under abundant data or large CSI error
-the advantage narrows). All code and result files that reproduce every number and
-figure are openly available.
+\textbf{Relation to prior work.} Existing learn-to-optimize methods for wireless
+resource management are almost exclusively black-box networks (fully connected,
+deep-unfolded, or graph-based) evaluated under stationary, centralized conditions.
+Our work differs on three axes that matter for autonomous deployment: it is
+interpretable (the learned policy reduces to closed-form rules), it is studied
+under genuine non-stationarity with an online communication budget, and it
+quantifies sample efficiency and extrapolation rather than only in-distribution
+accuracy. To our knowledge this is among the first uses of Kolmogorov--Arnold
+networks as interpretable optimization surrogates inside a networked, federated
+signal-processing pipeline.
 
-\textbf{Declarations.} This manuscript is original, is not under consideration
-elsewhere, all authors approve the submission, and we declare no conflicts of
-interest. The work was supported in part by PTIT. We believe the paper is a strong
-fit for the Special Issue and thank you for your consideration.
+\textbf{Rigor and transparency.} In keeping with reproducible, trustworthy
+research, all results are multi-seed with standard deviations and Wilcoxon
+signed-rank tests, every comparison between model classes is parameter-matched and
+trained under an identical budget, and the ablations toggle one component at a time
+so that effects are attributable rather than correlational. Importantly, we report
+transparently the cases where our method does \emph{not} help: online grid
+self-evolution gives no significant gain over a well-sized static grid, and under
+abundant centralized data or large channel-estimation error the advantage narrows.
+The complete code, configurations, and result files that reproduce every number,
+table, and figure in the paper are openly available.
+
+\textbf{Declarations.} This manuscript is original, has not been published
+previously, and is not under consideration for publication elsewhere. All authors
+have read and approved the submission and declare no competing interests. The work
+was supported in part by the Posts and Telecommunications Institute of Technology
+(PTIT).
+
+We believe the paper is a strong fit for the Special Issue and hope you find it
+suitable for peer review. Thank you for your time and consideration.
 
 \vspace{8pt}
 \noindent Sincerely,\\[4pt]
