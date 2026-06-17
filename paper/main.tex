@@ -8,7 +8,21 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepgfplotslibrary{fillbetween}
-\usetikzlibrary{positioning,calc}
+\usetikzlibrary{positioning,calc,arrows.meta}
+% --- colorblind-safe palette (Okabe-Ito), locked per method across all figures ---
+\definecolor{cOurs}{RGB}{0,114,178}     % fedkan_opt (hero) -- blue
+\definecolor{cKanfull}{RGB}{0,158,115}  % kan_full -- bluish green
+\definecolor{cEvolve}{RGB}{230,159,0}   % kan_evolve -- orange
+\definecolor{cMlp}{RGB}{213,94,0}       % mlp -- vermillion
+\definecolor{cMlpp}{RGB}{204,121,167}   % mlp_prox -- purple
+\definecolor{cGray}{RGB}{110,110,110}   % linear / unfold / fits
+\pgfplotsset{every axis/.append style={
+  grid=major, grid style={gray!22,very thin}, line width=1pt, mark size=2.6pt,
+  tick label style={font=\footnotesize}, label style={font=\small},
+  title style={font=\small\bfseries},
+  legend style={font=\scriptsize,draw=gray!45,fill=white,fill opacity=0.9,
+    text opacity=1,rounded corners,inner sep=2pt},
+  legend cell align=left}}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage[hidelinks]{hyperref}
@@ -50,7 +64,7 @@
 \newcommand{\genKANin}{0.003}\newcommand{\genKANex}{0.36}
 \newcommand{\genMLPin}{0.006}\newcommand{\genMLPex}{2.33}
 % extracted-rule forms + per-feature fidelity (kan_full)
-\newcommand{\ruleGform}{nonlinear}\newcommand{\ruleGrtwo}{0.36}
+\newcommand{\ruleGform}{nonlinear}\newcommand{\ruleGrtwo}{0.35}
 \newcommand{\ruleIform}{near-linear}\newcommand{\ruleIrtwo}{0.88}
 \newcommand{\ruleProform}{linear}\newcommand{\rulePrortwo}{0.99}
 \newcommand{\ruleFid}{0.74}
@@ -92,7 +106,8 @@ error at equal parameters, Wilcoxon $p<0.01$, while a linear predictor fails
 entirely); (ii) it extrapolates to unseen interference regimes about an order of
 magnitude more accurately; (iii) its additive-spline structure yields closed-form,
 auditable design rules; and (iv) a contextual-bandit controller that learns the
-communication budget's dual price halves the uplink at competitive accuracy. We
+per-slot update sparsity under the communication budget halves the uplink at
+competitive accuracy. We
 also report transparent negatives: online grid self-evolution gives no significant
 gain over a static grid, and the accuracy advantage does not survive large
 channel-estimation error. The study positions interpretable KAN surrogates as a
@@ -147,8 +162,8 @@ that sparsifies model updates for communication efficiency, and a spline-reading
 procedure that extracts closed-form design rules (Sec.~\ref{sec:method}).
 \item The \emph{evolutive} mechanisms that work in our setting are online ones: the
 shared model tracks regime drift through continual federated aggregation, and the
-bandit controller adapts the communication rate by learning the budget's dual price
-online. We quantify these, together with sample efficiency, extrapolation, and
+bandit controller adapts the communication rate by learning, online, the update
+sparsity (the operating point implied by the budget's dual price). We quantify these, together with sample efficiency, extrapolation, and
 interpretability, over many seeds with significance tests (Sec.~\ref{sec:results}).
 \item We delineate, transparently, where ``evolutive'' \emph{capacity growth} does
 \emph{not} help: online grid self-evolution gives no significant gain over a
@@ -160,7 +175,7 @@ The remainder is organized as follows. Section~\ref{sec:model} states the system
 model, hardens the problem into a mixed-integer program (P1), and decomposes it
 into an inner learning problem and an outer control problem with a closed-form
 static solution. Section~\ref{sec:method} presents the KAN surrogate, the
-budget-aware online controller that learns the corresponding dual price,
+budget-aware online controller that learns the corresponding update sparsity,
 Algorithm~\ref{alg:evokan}, the rule-extraction procedure, and a complexity
 analysis. Sections~\ref{sec:setup} and~\ref{sec:results} give the setup and the
 multi-seed results with ablations; Section~\ref{sec:disc} discusses scope and
@@ -173,8 +188,9 @@ instance to its solution: fully-connected networks for interference
 management~\cite{sun2018l2o}, deep unfolding of classical
 iterations~\cite{balatsoukas2019unfolding}, and graph neural networks that exploit
 the problem topology for scalable power control~\cite{shen2021gnn,eisen2020rgnn};
-the broader trade-off between model-based and AI-based wireless design is surveyed
-in~\cite{zappone2019ai,oshea2017physical}.
+the broader trade-off between model-based and AI-based wireless design, and deep
+learning for the physical layer more generally, are surveyed
+in~\cite{zappone2019ai,oshea2017physical,lu2020amc}.
 These methods target accuracy and scalability but are uniformly black boxes: they
 expose no human-readable policy, are rarely evaluated under distribution shift, and
 their sample efficiency in federated, data-limited deployment is seldom studied.
@@ -196,7 +212,7 @@ FedAvg~\cite{mcmahan2017fedavg} and its proximal variant~\cite{li2020fedprox}
 underpin distributed training across terminals~\cite{niknam2020flwireless,amiri2020federated};
 uplink is curtailed by sparsification and quantization~\cite{konecny2016fedcomm,shi2023kanfl}. Existing
 schemes mostly fix the compression level; we instead let a contextual bandit learn
-the per-slot sparsity from a budget, realizing online the Lagrangian dual price of
+the per-slot sparsity from a budget, approximating online the operating point of the Lagrangian dual price of
 the communication constraint (Sec.~\ref{sec:decomp}).
 
 \textbf{Non-stationarity and continual learning.} Concept-drift adaptation and
@@ -305,8 +321,9 @@ stationarity condition $\partial_p\mathrm{EE}=0$,
 \label{eq:stat}
 \end{equation}
 is transcendental, so $\pstar(\cdot)$ has no closed form, yet it is smooth and
-deterministic in $s$. Decision quality is the EE regret
-$\rho(p;s)=\mathrm{EE}(\pstar(s);s)-\mathrm{EE}(p;s)\ge 0$.
+deterministic in $s$. Decision quality is the \emph{relative} EE regret
+$\rho(p;s)=\big[\mathrm{EE}(\pstar(s);s)-\mathrm{EE}(p;s)\big]/\mathrm{EE}(\pstar(s);s)\in[0,1]$,
+which is the quantity reported throughout.
 
 \begin{proposition}\label{prop:ee}
 For $g,p_0>0$ and $I\ge 0$, $\mathrm{EE}(\cdot;s)$ is strictly quasi-concave on
@@ -339,7 +356,7 @@ per-slot uplink budget $B(t)$:
 \min_{\theta,\{m_{n,t}\}}\ &\frac1{T}{\textstyle\sum_{t}}\frac1{N}{\textstyle\sum_{n}}\,
    \mathbb E_{s\sim\mathcal D_t}\big[\rho(\hat p_\theta(\hat s_{n,t});s)\big]\\[-1pt]
 \text{s.t.}\ & {\textstyle\sum_{n}} a_{n,t}\,c(m_{n,t})\le B(t),\ \ m_{n,t}\!\in\!\{0,1\}^{|\theta|},\ \forall t,\\[-1pt]
-& \theta_{t}={\textstyle\sum_n} w_{n,t}\big(\theta_{t-1}+m_{n,t}\!\odot\!\Delta\theta_{n,t}\big),
+& \theta_{t}={\textstyle\sum_n} w_{n,t}\big(\theta_{t-1}+m_{n,t}\!\odot\!\Delta\theta_{n,t}\big),\ \ {\textstyle\sum_n} w_{n,t}=1,
 \end{aligned}
 \label{eq:p1}
 \end{equation}
@@ -388,7 +405,8 @@ on cross-terminal heterogeneity; the change points $\mathcal S$ are unobserved; 
 re-deriving $\theta^{\star}$ per slot is infeasible. We therefore (i) replace the
 inner solver \eqref{eq:inner} by a learned, sample-efficient, interpretable KAN
 surrogate, and (ii) replace the outer rule \eqref{eq:kappa} by an online controller
-that \emph{learns} the dual price $\lambda_t$ from feedback. This is the
+that \emph{learns} the keep-fraction, the operating point implied by the dual price
+$\lambda_t$, from feedback. This is the
 Optimization$\to$AI transition that defines the method.
 
 \section{Proposed Method}\label{sec:method}
@@ -424,13 +442,14 @@ for the smooth map $\pstar(\cdot)$, sample-efficient in the data-limited federat
 regime and smoothly extrapolating beyond the training support, and directly
 readable as one-dimensional curves (Sec.~\ref{sec:method}-C).
 
-\subsection{Outer control: learning the dual price}
+\subsection{Outer control: budgeted update sparsification}
 A contextual bandit~\cite{li2010linucb,sutton2018rl} observes the context (regime
-indicator, budget price, recent regret) and selects the keep-fraction $\kappa_t$ from a
-discrete set; its reward, the realized regret reduction minus $\lambda_t$ times the
-bits spent, is exactly the Lagrangian \eqref{eq:outer}. The controller thus learns
-online the price that \eqref{eq:kappa} computes statically, without observing
-$\mathcal D_t$ or $\mathcal S$. Masked updates are
+indicator, budget signal, recent regret) and selects the keep-fraction $\kappa_t$
+from a discrete set; its reward, the realized regret reduction minus a fixed price
+weight $\lambda$ times the bits spent, is the Lagrangian \eqref{eq:outer}. The
+controller thus learns online the keep-fraction, i.e.\ the water-filling operating
+point that \eqref{eq:kappa} computes statically, without observing $\mathcal D_t$ or
+$\mathcal S$. Masked updates are
 FedAvg-aggregated~\cite{mcmahan2017fedavg}; participation follows visibility
 $a_{n,t}$. A change detector~\cite{page1954cusum} on the regret stream supplies the
 regime indicator and drives the self-evolution ablation below.
@@ -444,7 +463,7 @@ Algorithm~\ref{alg:evokan} states one online slot.
 \For{each visible terminal $n$ \textbf{in parallel}}
   \State draw states $\hat s$ at regime $I_{n,t}$, label with oracle $\pstar$ via \eqref{eq:stat}
   \State $\rho_n\!\gets$ pre-update regret; update detector; build context $u_n$
-  \State $\kappa_n\!\gets\textsc{Bandit}(u_n)$ \Comment{keep-fraction $=$ learned dual price}
+  \State $\kappa_n\!\gets\textsc{Bandit}(u_n)$ \Comment{keep-fraction (dual-price operating point)}
   \State $\Delta\theta_n\!\gets$ local SGD on \eqref{eq:inner}
   \State $m_n\!\gets\textsc{TopK}(\Delta\theta_n,\kappa_n)$; send $m_n\!\odot\!\Delta\theta_n$ ($\kappa_n|\theta|$ entries)
 \EndFor
@@ -498,7 +517,7 @@ A KAN and an MLP of equal parameter count $|\theta|$ have the same
 $\mathcal O(|\theta|)$ forward cost, so the inner solver adds no asymptotic compute
 over an MLP surrogate; the benefit is reaching a target accuracy at fewer
 parameters (Sec.~\ref{sec:results}). Local training costs
-$\mathcal O(E\,B\,|\theta|)$ per terminal per slot ($E$ epochs, $B$ batch), the
+$\mathcal O(E\,b\,|\theta|)$ per terminal per slot ($E$ epochs, $b$ batch), the
 controller is $\mathcal O(1)$ per slot, and server aggregation is
 $\mathcal O(N|\theta|)$. The uplink per participating terminal is
 $\kappa_t|\theta|$ words rather than $|\theta|$, so the budgeted controller reduces
@@ -565,7 +584,7 @@ MLP / linear & param-matched / single linear \\
 Unfold steps $K$ & $15$ \\
 Optimizer, lr, local epochs & Adam, $0.01$, $6$ \\
 Bandit keep-fractions $\kappa$ & $\{0.25,0.5,1.0\}$ \\
-Drift detector (Page--Hinkley) & $\delta\!=\!0.005,\lambda\!=\!0.05$ \\
+Drift detector (Page--Hinkley) & $\delta\!=\!0.005,\lambda_{\mathrm{PH}}\!=\!0.05$ \\
 Bits per word & $32$ \\
 \bottomrule
 \end{tabular}}
@@ -584,9 +603,9 @@ $\mathcal S$ and the next flag. Lower is better for all but $R^2$.
 \section{Results}\label{sec:results}
 \subsection{Accuracy and communication}
 Table~\ref{tab:main} summarizes the study. The KAN surrogates clearly dominate the
-MLPs: \texttt{kan\_full} attains NMSE $\KFnmse$ versus the MLP's $\MLnmse$
-($\ratioNmse\times$ lower, Wilcoxon $p=\pNmse$, lower in $\winNmse$ seeds) and
-regret $\KFreg$ versus $\MLreg$ ($p=\pReg$, $\winReg$). As a sanity anchor, NMSE
+MLPs (Fig.~\ref{fig:bar}): \texttt{kan\_full} attains NMSE $\KFnmse$ versus the
+MLP's $\MLnmse$ ($\ratioNmse\times$ lower, Wilcoxon $p=\pNmse$, lower in $\winNmse$
+seeds) and regret $\KFreg$ versus $\MLreg$ ($p=\pReg$, $\winReg$). As a sanity anchor, NMSE
 normalizes by the target variance, so a constant (mean-power) predictor scores
 NMSE$\,=\,1$ by construction; the linear surrogate ($\LInmse$) is in fact worse than
 this trivial baseline while the KAN ($\KFnmse$) is over an order of magnitude
@@ -621,33 +640,46 @@ unfold (L2O)           & \UNnmse & \UNreg & \UNbits & --   & \UNpar \\
 \centering
 \resizebox{0.92\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[xlabel={Uplink volume (Mb)},ylabel={NMSE of $\hat p$ vs.\ $\pstar$},
-  xmin=10,xmax=40,ymin=0,ymax=0.11,grid=both,
-  every node near coord/.append style={font=\scriptsize,anchor=west}]
-\addplot[only marks,mark=*,mark size=2.5pt,nodes near coords,
-  point meta=explicit symbolic]
-  coordinates {
-    (\FObits,\FOnmse)[ours] (\KFbits,\KFnmse)[kan\_full] (\KEbits,\KEnmse)[evolve]
-    (\MLbits,\MLnmse)[mlp] (\MPbits,\MPnmse)[mlp\_prox]};
+\begin{axis}[xlabel={uplink volume (Mb)},ylabel={NMSE of $\hat p$ vs.\ $\pstar$},
+  xmin=12,xmax=40,ymin=0,ymax=0.10,clip=false]
+\addplot[only marks,mark=*,cOurs,mark size=3.4pt] coordinates {(\FObits,\FOnmse)};
+\addplot[only marks,mark=square*,cKanfull] coordinates {(\KFbits,\KFnmse)};
+\addplot[only marks,mark=diamond*,cEvolve] coordinates {(\KEbits,\KEnmse)};
+\addplot[only marks,mark=triangle*,cMlp] coordinates {(\MLbits,\MLnmse)};
+\addplot[only marks,mark=pentagon*,cMlpp] coordinates {(\MPbits,\MPnmse)};
+\node[cOurs,anchor=north,font=\scriptsize\bfseries] at (axis cs:\FObits,\FOnmse) {ours};
+\node[anchor=west,font=\scriptsize] at (axis cs:\KFbits,\KFnmse) {kan\_full};
+\node[anchor=south,font=\scriptsize] at (axis cs:\KEbits,\KEnmse) {kan\_evolve};
+\node[anchor=south,font=\scriptsize] at (axis cs:\MLbits,\MLnmse) {mlp};
+\node[anchor=north,font=\scriptsize] at (axis cs:\MPbits,\MPnmse) {mlp\_prox};
+\draw[-{Stealth},cGray,thick] (axis cs:34,0.092) -- (axis cs:20,0.062)
+  node[pos=0.55,sloped,above,font=\scriptsize,cGray]{better};
 \end{axis}
 \end{tikzpicture}}
 \caption{Communication--accuracy frontier. The proposed bandit-sparsified KAN
-(ours) dominates both MLP variants and halves the uplink of the dense KAN.}
+(\textcolor{cOurs}{\textbf{ours}}) dominates both MLP variants (lower error at half
+the uplink) and halves the uplink of the dense \texttt{kan\_full}.}
 \label{fig:pareto}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\resizebox{0.92\columnwidth}{!}{%
+\resizebox{0.86\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[ybar,bar width=10pt,symbolic x coords={ours,kan\_full,mlp,mlp\_prox},
-  xtick=data,ylabel={NMSE},ymin=0,ymax=0.13,
-  error bars/y dir=both,error bars/y explicit,enlarge x limits=0.2]
-\addplot coordinates {(ours,\FOnmse)+-(0,\FOnmsesd) (kan\_full,\KFnmse)+-(0,\KFnmsesd)
-  (mlp,\MLnmse)+-(0,\MLnmsesd) (mlp\_prox,\MPnmse)+-(0,\MPnmsesd)};
+\begin{axis}[ybar,bar width=14pt,symbolic x coords={ours,kan\_full,mlp,mlp\_prox},
+  xtick=data,ylabel={NMSE},ymin=0,ymax=0.135,enlarge x limits=0.22,
+  nodes near coords,every node near coords/.append style={font=\tiny},
+  error bars/y dir=both,error bars/y explicit,
+  error bars/error bar style={cGray}]
+\addplot[fill=cOurs,draw=cOurs,bar shift=0pt] coordinates {(ours,\FOnmse)+-(0,\FOnmsesd)};
+\addplot[fill=cKanfull,draw=cKanfull,bar shift=0pt] coordinates {(kan\_full,\KFnmse)+-(0,\KFnmsesd)};
+\addplot[fill=cMlp,draw=cMlp,bar shift=0pt] coordinates {(mlp,\MLnmse)+-(0,\MLnmsesd)};
+\addplot[fill=cMlpp,draw=cMlpp,bar shift=0pt] coordinates {(mlp\_prox,\MPnmse)+-(0,\MPnmsesd)};
 \end{axis}
 \end{tikzpicture}}
-\caption{NMSE (mean$\pm$std, \Nseeds{} seeds). Both KAN variants are well below the MLPs.}
+\caption{NMSE (mean$\pm$std, \Nseeds{} seeds). Both KAN variants
+(\textcolor{cOurs}{ours}, \textcolor{cKanfull}{kan\_full}) are well below the MLPs
+(\textcolor{cMlp}{mlp}, \textcolor{cMlpp}{mlp\_prox}).}
 \label{fig:bar}
 \end{figure}
 
@@ -704,20 +736,21 @@ multi-seed protocol.
 \centering
 \resizebox{0.78\textwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[width=14cm,height=5cm,xlabel={slot},ylabel={global NMSE (mean over seeds)},ymin=0,
-  legend pos=north east,grid=both,legend style={font=\scriptsize}]
-\addplot[name path=fu,blue!30,forget plot] table[x=slot,y expr=\thisrow{fo}+\thisrow{fo_sd}] {data/conv.dat};
-\addplot[name path=fl,blue!30,forget plot] table[x=slot,y expr=\thisrow{fo}-\thisrow{fo_sd}] {data/conv.dat};
-\addplot[blue!12,forget plot] fill between[of=fu and fl];
-\addplot[blue,thick] table[x=slot,y=kf] {data/conv.dat}; \addlegendentry{kan\_full}
-\addplot[teal,thick,dashed] table[x=slot,y=fo] {data/conv.dat}; \addlegendentry{ours ($\pm$std)}
-\addplot[red,thick,densely dotted] table[x=slot,y=mlp] {data/conv.dat}; \addlegendentry{mlp}
+\begin{axis}[width=14cm,height=5cm,xlabel={slot},ylabel={global NMSE (mean over seeds)},
+  xmin=14,ymin=0,ymax=0.62,legend columns=3,legend style={at={(0.5,1.02)},anchor=south}]
+\addplot[name path=fu,draw=none,forget plot] table[x=slot,y expr=\thisrow{fo}+\thisrow{fo_sd}] {data/conv.dat};
+\addplot[name path=fl,draw=none,forget plot] table[x=slot,y expr=\thisrow{fo}-\thisrow{fo_sd}] {data/conv.dat};
+\addplot[cOurs!15,forget plot] fill between[of=fu and fl];
+\addplot[cKanfull,thick] table[x=slot,y=kf] {data/conv.dat}; \addlegendentry{kan\_full}
+\addplot[cOurs,very thick,dashed] table[x=slot,y=fo] {data/conv.dat}; \addlegendentry{ours ($\pm$std)}
+\addplot[cMlp,thick,densely dotted] table[x=slot,y=mlp] {data/conv.dat}; \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
 \caption{Convergence and tracking under drift: NMSE vs.\ slot averaged over all
-seeds (shaded band $=\pm$std for the proposed method). The KAN advantage is
-consistent across seeds and across the entire non-stationary horizon, and the
-proposed sparsified variant tracks the dense KAN at half the uplink.}
+seeds (shaded band $=\pm$std for the proposed method; the initial burn-in is
+omitted so the steady-state gap is visible). The KAN advantage is consistent across
+seeds and across the non-stationary horizon, and the proposed sparsified variant
+tracks the dense \texttt{kan\_full} at half the uplink.}
 \label{fig:conv}
 \end{figure*}
 
@@ -725,17 +758,19 @@ proposed sparsified variant tracks the dense KAN at half the uplink.}
 \centering
 \resizebox{0.92\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[xlabel={slot},ylabel={global NMSE},ymin=0,ymax=0.6,
-  legend pos=north east,grid=both,legend style={font=\scriptsize}]
-\addplot[blue,thick] table[x=slot,y=nmse] {data/ts_kan_full.dat};
+\begin{axis}[xlabel={slot},ylabel={global NMSE (log)},ymode=log,
+  legend pos=north east]
+\addplot[cKanfull,thick] table[x=slot,y=nmse] {data/ts_kan_full.dat};
 \addlegendentry{kan\_full}
-\addplot[teal,thick,dashed] table[x=slot,y=nmse] {data/ts_fedkan_opt.dat};
+\addplot[cOurs,very thick,dashed] table[x=slot,y=nmse] {data/ts_fedkan_opt.dat};
 \addlegendentry{ours}
-\addplot[red,thick,densely dotted] table[x=slot,y=nmse] {data/ts_mlp.dat};
+\addplot[cMlp,thick,densely dotted] table[x=slot,y=nmse] {data/ts_mlp.dat};
 \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
-\caption{Global NMSE over the non-stationary horizon (representative seed).}
+\caption{Global NMSE over the non-stationary horizon for a representative seed
+(log scale, so both the initial transient and the steady-state gap are visible).
+The KAN curves sit below the MLP throughout.}
 \label{fig:ts}
 \end{figure}
 
@@ -776,27 +811,31 @@ circuit power $p_0$ & \ruleProform & \rulePrortwo \\
 \resizebox{0.92\textwidth}{!}{%
 \begin{tikzpicture}
 \begin{axis}[name=ax1,width=6cm,height=4.2cm,title={$g$ (channel gain)},xlabel={std.\ input},
-  ylabel={response},grid=both,title style={font=\small}]
-\addplot[blue,thick] table[x=x,y=y] {data/rule_g.dat};
-\addplot[red,dashed] table[x=x,y=yfit] {data/rule_g.dat};
+  ylabel={response}]
+\addplot[cOurs,very thick] table[x=x,y=y] {data/rule_g.dat};
+\addplot[cMlp,dashed,thick] table[x=x,y=yfit] {data/rule_g.dat};
+\node[anchor=north west,font=\scriptsize] at (rel axis cs:0.03,0.97) {$R^2=\ruleGrtwo$ (nonlinear)};
 \end{axis}
 \begin{axis}[name=ax2,at={($(ax1.east)+(1.4cm,0)$)},anchor=west,
-  width=6cm,height=4.2cm,title={$I$ (interference)},xlabel={std.\ input},grid=both,
-  title style={font=\small}]
-\addplot[blue,thick] table[x=x,y=y] {data/rule_I.dat};
-\addplot[red,dashed] table[x=x,y=yfit] {data/rule_I.dat};
+  width=6cm,height=4.2cm,title={$I$ (interference)},xlabel={std.\ input}]
+\addplot[cOurs,very thick] table[x=x,y=y] {data/rule_I.dat};
+\addplot[cMlp,dashed,thick] table[x=x,y=yfit] {data/rule_I.dat};
+\node[anchor=north west,font=\scriptsize] at (rel axis cs:0.03,0.97) {$R^2=\ruleIrtwo$};
 \end{axis}
 \begin{axis}[name=ax3,at={($(ax2.east)+(1.4cm,0)$)},anchor=west,
-  width=6cm,height=4.2cm,title={$p_0$ (circuit power)},xlabel={std.\ input},grid=both,
-  title style={font=\small}]
-\addplot[blue,thick] table[x=x,y=y] {data/rule_p0.dat};
-\addplot[red,dashed] table[x=x,y=yfit] {data/rule_p0.dat};
+  width=6cm,height=4.2cm,title={$p_0$ (circuit power)},xlabel={std.\ input},
+  legend style={at={(0.5,-0.28)},anchor=north,legend columns=2}]
+\addplot[cOurs,very thick] table[x=x,y=y] {data/rule_p0.dat}; \addlegendentry{KAN spline}
+\addplot[cMlp,dashed,thick] table[x=x,y=yfit] {data/rule_p0.dat}; \addlegendentry{best-fit form}
+\node[anchor=north west,font=\scriptsize] at (rel axis cs:0.03,0.97) {$R^2=\rulePrortwo$};
 \end{axis}
 \end{tikzpicture}}
-\caption{Extracted univariate rules (solid) and best-fit closed form (dashed) for
-the learned optimal-power policy. The $p_0$ and $I$ dependences are near-linear;
-the $g$ dependence is nonlinear and carried by the spline, which an operator can
-read directly off the trained model.}
+\caption{Extracted univariate rules: the learned KAN spline (solid blue) and its
+best single-basis closed-form fit (dashed) for each input. The $p_0$ and $I$
+dependences are near-linear and reduce to a clean formula ($R^2=\rulePrortwo,
+\ruleIrtwo$); the $g$ dependence is nonlinear ($R^2=\ruleGrtwo$ for any single
+form), so its interpretable artifact is the spline curve itself rather than an
+equation.}
 \label{fig:rules}
 \end{figure*}
 
@@ -873,17 +912,22 @@ budget varies.
 \centering
 \resizebox{0.9\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[xlabel={uplink volume (Mb)},ylabel={final NMSE},grid=both,
-  legend pos=north east,legend style={font=\scriptsize}]
-\addplot[blue,thick,mark=*] table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto.dat};
+\begin{axis}[xlabel={uplink volume (Mb)},ylabel={final NMSE (log)},ymode=log,
+  legend pos=north west,clip=false]
+\addplot[cKanfull,very thick,mark=*] table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto.dat};
 \addlegendentry{KAN, keep-fraction sweep}
-\addplot[teal,only marks,mark=triangle*,mark size=3pt]
+\addplot[cOurs,only marks,mark=star,mark size=4pt]
   table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto_bandit.dat};
 \addlegendentry{fedkan\_opt (bandit)}
+\node[anchor=south,font=\scriptsize,cKanfull] at (axis cs:4.5,0.057) {knee ($\kappa\!\approx\!0.5$)};
+\node[anchor=west,font=\scriptsize,cOurs] at (axis cs:5.4,0.075) {auto};
+\draw[-{Stealth},cGray] (axis cs:7.5,0.5) -- (axis cs:3.5,0.09)
+  node[pos=0.5,sloped,above,font=\scriptsize,cGray]{better};
 \end{axis}
 \end{tikzpicture}}
-\caption{Communication--accuracy frontier from a keep-fraction sweep; the bandit
-controller lands on a favorable knee automatically.}
+\caption{Communication--accuracy frontier from a keep-fraction sweep (log scale).
+Accuracy is flat down to $\kappa\!\approx\!0.5$ (the knee, half the uplink) then
+collapses; the bandit lands near the knee automatically.}
 \label{fig:pareto2}
 \end{figure}
 
@@ -906,20 +950,20 @@ data-limited federated deployment.
 \resizebox{0.99\columnwidth}{!}{%
 \begin{tikzpicture}
 \begin{axis}[name=sa,width=4.7cm,height=3.8cm,xlabel={\# terminals},
-  ylabel={final NMSE},grid=both,title={(a) scaling},title style={font=\small},
-  error bars/y dir=both,error bars/y explicit]
-\addplot[blue,thick,mark=*] table[x=nodes,y=nmse,y error=nmse_sd] {data/scaling.dat};
+  ylabel={final NMSE},ymin=0.055,ymax=0.095,title={(a) federated scaling},
+  error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
+\addplot[cOurs,very thick,mark=*] table[x=nodes,y=nmse,y error=nmse_sd] {data/scaling.dat};
 \end{axis}
 \begin{axis}[name=sb,at={($(sa.east)+(1.2cm,0)$)},anchor=west,width=4.7cm,height=3.8cm,
-  xlabel={KAN grid size},ylabel={NMSE},grid=both,title={(b) capacity},
-  title style={font=\small},error bars/y dir=both,error bars/y explicit]
-\addplot[blue,thick,mark=*] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
+  xlabel={KAN grid size},ylabel={NMSE (log)},ymode=log,title={(b) centralized capacity},
+  error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
+\addplot[cKanfull,very thick,mark=square*] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
 \end{axis}
 \end{tikzpicture}}
-\caption{(a) accuracy improves with more terminals then saturates; (b) under
-centralized abundant data a larger grid keeps helping. In the data-limited
-federated regime, however, growing the grid online overfits (Sec.~\ref{sec:results}),
-so a fixed modest grid is preferred.}
+\caption{(a) Federated accuracy improves with more terminals then saturates around
+eight to twelve. (b) Under centralized abundant data a larger grid keeps helping
+(log scale). In the data-limited federated regime, however, growing the grid online
+overfits (Sec.~\ref{sec:results}), so a fixed modest grid is preferred.}
 \label{fig:scaling}
 \end{figure}
 
@@ -943,16 +987,19 @@ favourable $\sigma_c\!=\!0$ point.
 \centering
 \resizebox{0.9\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[ybar,bar width=6pt,symbolic x coords={0.2,1.0,3.0},xtick=data,
-  xlabel={interference regime $I$},ylabel={final NMSE},ymin=0,
-  legend style={font=\scriptsize},legend pos=north west,enlarge x limits=0.3]
-\addplot table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
-\addplot table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
-\addplot table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
+\begin{axis}[ybar,bar width=9pt,symbolic x coords={0.2,1.0,3.0},xtick=data,
+  xlabel={interference regime $I$},ylabel={final NMSE},ymin=0,ymax=0.21,
+  enlarge x limits=0.3,nodes near coords,
+  every node near coords/.append style={font=\tiny,rotate=90,anchor=west},
+  legend columns=3,legend style={at={(0.5,1.02)},anchor=south}]
+\addplot[fill=cOurs,draw=cOurs] table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
+\addplot[fill=cKanfull,draw=cKanfull] table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
+\addplot[fill=cMlp,draw=cMlp] table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
-\caption{Final NMSE per interference regime. The KAN advantage holds across the
-drift range, not just on average.}
+\caption{Final NMSE per interference regime. The KAN variants are at or below the
+MLP in every regime, so the advantage holds across the drift range, not just on
+average.}
 \label{fig:regime}
 \end{figure}
 
@@ -960,18 +1007,21 @@ drift range, not just on average.}
 \centering
 \resizebox{0.9\columnwidth}{!}{%
 \begin{tikzpicture}
-\begin{axis}[xlabel={CSI error $\sigma_c$ (dB std)},ylabel={final NMSE},grid=both,
-  legend pos=north west,legend style={font=\scriptsize},
-  error bars/y dir=both,error bars/y explicit]
-\addplot[blue,thick,mark=*] table[x=sigma,y=kan,y error=kan_sd] {data/csi_fed.dat};
+\begin{axis}[xlabel={CSI error $\sigma_c$ (dB std)},ylabel={final NMSE (log)},
+  ymode=log,legend pos=north west,clip=false,
+  error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
+\addplot[cGray!18,forget plot,area legend] coordinates {(0.5,1e-2) (2,1e-2) (2,2) (0.5,2)}
+  \closedcycle;
+\node[cGray,font=\tiny,anchor=north] at (axis cs:1.25,1.6) {MLP $\ge$ KAN};
+\addplot[cOurs,very thick,mark=*] table[x=sigma,y=kan,y error=kan_sd] {data/csi_fed.dat};
 \addlegendentry{ours (KAN)}
-\addplot[red,thick,densely dashed,mark=square] table[x=sigma,y=mlp,y error=mlp_sd] {data/csi_fed.dat};
+\addplot[cMlp,thick,densely dashed,mark=square*] table[x=sigma,y=mlp,y error=mlp_sd] {data/csi_fed.dat};
 \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
-\caption{CSI estimation error in the federated loop (a boundary study). The KAN
-leads only at $\sigma_c\!\approx\!0$; from $\sigma_c\!\ge\!0.5$ the MLP is
-comparable or marginally better, and both degrade together at large error.}
+\caption{CSI estimation error in the federated loop (a boundary study, log scale).
+The KAN leads only at $\sigma_c\!\approx\!0$; from $\sigma_c\!\ge\!0.5$ (shaded) the
+MLP is comparable or marginally better, and both degrade together at large error.}
 \label{fig:csifed}
 \end{figure}
 
@@ -1023,11 +1073,13 @@ The controller has a clean economic reading. The multiplier $\lambda_t$ in
 \eqref{eq:outer} is the shadow price of an uplink bit: when the budget $B(t)$
 tightens, $\lambda_t$ rises and the keep-fraction $\kappa_t^\star$ falls, so each
 terminal transmits only its highest-magnitude (highest-marginal-value) update
-entries. The bandit estimates this price from realized reward without knowing the
-drifting distribution or the change points, which is why it tracks the static
-water-filling rule \eqref{eq:kappa} while remaining robust to non-stationarity. A
-fixed keep-fraction can match the bandit at a single budget but cannot follow a
-time-varying $B(t)$, which is the practical regime for shared satellite links.
+entries. The bandit does not estimate $\lambda_t$ explicitly; with the price weight
+fixed in its reward, it learns online, from context (regime, budget signal, recent
+regret), the keep-fraction that maximizes that reward, i.e.\ the operating point of
+the water-filling rule \eqref{eq:kappa}, and adapts it as conditions change without
+knowing the drifting distribution or the change points. A fixed keep-fraction can
+match it at a single budget but cannot follow a time-varying $B(t)$, the practical
+regime for shared satellite links.
 
 \subsection{Validity and reproducibility}
 We guard the conclusions against the failure modes that most often invalidate
@@ -1049,7 +1101,7 @@ resource optimization over non-stationary LEO links. Starting from a hardened
 mixed-integer formulation (P1), we decomposed the problem into an inner
 solution-map learning task and an outer budgeted-communication control task, gave
 the closed-form static rule for the latter, and let an online bandit learn its
-dual price. Empirically the KAN surrogate learns the energy-efficiency solution map
+operating point. Empirically the KAN surrogate learns the energy-efficiency solution map
 about $\ratioNmse\times$ more accurately than a parameter-matched MLP, halves the
 uplink through learned sparsification while still beating the MLP, extrapolates far
 more gracefully to unseen interference regimes, and yields closed-form design
@@ -1106,10 +1158,13 @@ figure in this paper are openly available at
 
 \vspace{-2mm}
 \begin{IEEEbiographynophoto}{Phuc Hao Do}
-received the Ph.D. degree in telecommunications. He is with the Center for Advanced
-Innovation, Research and Application, Da Nang Architecture University, Da Nang,
-Vietnam. His research interests include networked AI, federated and
-quantum-inspired learning, and signal processing for non-terrestrial networks.
+(Member, IEEE) received the Ph.D. degree in telecommunications from the Saint
+Petersburg State University of Telecommunications, Russia, in 2026 (defended
+December 2025, conferred March 2026). He is currently with the Faculty of
+Information Technology, Da Nang Architecture University, Da Nang, Vietnam. His
+current research interests include machine learning for the physical layer,
+Kolmogorov--Arnold networks, free-space optical communications, and quantum key
+distribution systems.
 \end{IEEEbiographynophoto}
 \begin{IEEEbiographynophoto}{Huu Phu Le}
 is with the Center for Advanced Innovation, Research and Application, Da Nang
