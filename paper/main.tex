@@ -38,9 +38,9 @@
 \newcommand{\MPreg}{0.021}\newcommand{\MPbits}{33.2}\newcommand{\MPpar}{361}
 \newcommand{\LInmse}{2.29}\newcommand{\LIreg}{0.30}
 \newcommand{\LIbits}{0.37}\newcommand{\LIpar}{4}
-% deep-unfolding L2O baseline (model-based) -- refresh after rerun
-\newcommand{\UNnmse}{\tbc{0.33}}\newcommand{\UNreg}{\tbc{0.03}}
-\newcommand{\UNbits}{\tbc{16.6}}\newcommand{\UNpar}{\tbc{16}}
+% deep-unfolding L2O baseline (model-based), 20-seed real
+\newcommand{\UNnmse}{0.555}\newcommand{\UNreg}{0.054}
+\newcommand{\UNbits}{1.5}\newcommand{\UNpar}{16}
 % ratios + Wilcoxon p-values (in-text), 20 seeds
 \newcommand{\ratioNmse}{1.8}\newcommand{\ratioReg}{2.2}
 \newcommand{\pNmse}{0.004}\newcommand{\pReg}{0.001}
@@ -674,12 +674,15 @@ than the federated-averaging algorithm.
 online grid growth; it does not improve accuracy (analyzed next), isolating
 self-evolution as the inactive factor in this regime.
 \emph{Model-based L2O.} The deep-unfolding baseline \texttt{unfold} embeds the exact
-EE gradient, so it attains competitive energy-efficiency \emph{regret} (it directly
-ascends the objective) but a much larger NMSE on $\pstar$ at a fixed shallow unroll
-(Table~\ref{tab:main}); crucially it requires the analytic objective and an
-iterative solve, whereas the KAN is model-free and gives accurate one-shot
-inference. This places our surrogate favourably against the classical
-learn-to-optimize approach a reviewer would expect.
+EE gradient, yet with a fixed shallow unroll and scalar step sizes it does not
+converge to $\pstar$ across the heterogeneous state range: it underperforms the
+learned surrogates on \emph{both} NMSE ($\UNnmse$) and regret ($\UNreg$, above the
+KAN's $\KFreg$ and the MLP's $\MLreg$). Its only edge is an extremely small
+footprint ($\UNpar$ parameters and the lowest uplink of all methods,
+$\approx\!\UNbits$\,Mb), since it transmits a handful of step sizes rather than a
+full model. The model-free KAN gives far more accurate one-shot inference without
+needing the analytic objective, which is the practical advantage over this classical
+learn-to-optimize approach.
 
 \subsection{Online behavior under drift}
 Fig.~\ref{fig:ts} tracks the global NMSE across slots for a representative seed as
@@ -975,9 +978,9 @@ comparable or marginally better, and both degrade together at large error.}
 \section{Discussion and Limitations}\label{sec:disc}
 We are explicit about what the contribution is and is not. The per-instance optimum
 in our testbed is cheap to obtain by grid search, so we do \emph{not} claim the
-surrogate replaces the solver on compute grounds; indeed the model-based unfolded
-solver attains good regret directly. The value we demonstrate and quantify is a
-different bundle that neither the iterative solver nor the MLP provides together:
+surrogate replaces the solver on compute grounds. The value we demonstrate and
+quantify is a different bundle that neither the iterative solver nor the MLP
+provides together:
 interpretability (closed-form rules), sample-efficient federated learning under a
 communication budget, and graceful extrapolation to unseen regimes. That bundle is
 what matters for autonomous, non-stationary, bandwidth-limited LEO deployment.
