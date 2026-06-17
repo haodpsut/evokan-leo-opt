@@ -39,6 +39,8 @@ class Config:
     interference_levels: tuple = (0.2, 1.0, 3.0)
     min_dwell: int = 8
     csi_sigma: float = 0.0           # log-normal CSI estimation error on the gain input
+    heterogeneous: bool = True       # per-node sub-ranges of (g, p0) -> non-IID federation
+    unfold_K: int = 15               # deep-unfolding steps for the L2O baseline
     # model
     model_type: str = "kan"          # kan | mlp
     hidden: tuple = (10,)
@@ -72,6 +74,9 @@ def _regressor(cfg, in_dim):
                              spline_order=cfg.spline_order)
     if cfg.model_type == "linear":
         return MLPClassifier(in_dim, [], 1)        # single Linear layer = linear reg
+    if cfg.model_type == "unfold":
+        from .l2o import UnfoldedEE
+        return UnfoldedEE(K=cfg.unfold_K, Pmax=cfg.Pmax)
     ref = KANClassifier(in_dim, cfg.hidden, 1, grid_size=cfg.grid_size)
     m, _ = mlp_matching_kan(in_dim, 1, ref)
     return m
@@ -120,8 +125,15 @@ def run_experiment(cfg: Config, verbose=False, log_every=0, tag=""):
         g_full = np.concatenate(g_full); vis_full = np.concatenate(vis_full)
         I_sched, switches = op.interference_schedule(len(g_full), rng,
                                                      cfg.interference_levels, cfg.min_dwell)
+        # per-node sub-ranges of (g, p0) -> heterogeneous, non-IID local data
+        if cfg.heterogeneous:
+            g_lo = float(np.exp(rng.uniform(np.log(0.2), np.log(8.0))))
+            g_hi = float(min(30.0, g_lo * np.exp(rng.uniform(np.log(3.0), np.log(10.0)))))
+            p0_lo = float(rng.uniform(0.1, 0.6)); p0_hi = float(min(1.0, p0_lo + rng.uniform(0.2, 0.5)))
+        else:
+            g_lo, g_hi, p0_lo, p0_hi = 0.2, 30.0, 0.1, 1.0
         nodes.append(dict(g=g_full, vis=vis_full, I=I_sched, p0=float(rng.uniform(0.1, 1.0)),
-                          switches=switches))
+                          switches=switches, g_lo=g_lo, g_hi=g_hi, p0_lo=p0_lo, p0_hi=p0_hi))
     T = len(nodes[0]["g"])
 
     eval_by_regime, _ = _eval_battery(cfg, np.random.default_rng(cfg.seed + 3))
@@ -157,6 +169,8 @@ def run_experiment(cfg: Config, verbose=False, log_every=0, tag=""):
             if not nd["vis"][t]:
                 continue
             X, y, _ = op.sample_states(nd["I"][t], cfg.slot_samples, rng, Pmax=cfg.Pmax,
+                                       g_lo=nd["g_lo"], g_hi=nd["g_hi"],
+                                       p0_lo=nd["p0_lo"], p0_hi=nd["p0_hi"],
                                        csi_sigma=cfg.csi_sigma)
             Xs = op.standardize_states(X, stats)
             local = fed.clone_model(global_model)

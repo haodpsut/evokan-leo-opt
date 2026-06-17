@@ -24,10 +24,11 @@ def make_config(method: str, **overrides) -> Config:
         "mlp":        dict(model_type="mlp", controller="fixed",  evolve_enabled=False),
         "mlp_prox":   dict(model_type="mlp", controller="fixed",  evolve_enabled=False, mu=0.01),
         "linear":     dict(model_type="linear", controller="fixed", evolve_enabled=False),
+        "unfold":     dict(model_type="unfold", controller="fixed", evolve_enabled=False),
     }
     if method not in presets:
         raise ValueError(f"unknown method {method}; choices={list(presets)}")
     return Config(**{**presets[method], **overrides})
 
 
-METHODS = ["fedkan_opt", "kan_full", "kan_evolve", "mlp", "mlp_prox", "linear"]
+METHODS = ["fedkan_opt", "kan_full", "kan_evolve", "mlp", "mlp_prox", "linear", "unfold"]
