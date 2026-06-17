@@ -46,17 +46,17 @@
 \newcommand{\pBits}{0.001}\newcommand{\pFOmlp}{0.027}
 \newcommand{\pEvolve}{0.13}\newcommand{\winNmse}{14/20}\newcommand{\winReg}{19/20}
 % generalization (Table II) -- refresh after studies finish
-\newcommand{\genKANin}{\tbc{0.003}}\newcommand{\genKANex}{\tbc{0.37}}
-\newcommand{\genMLPin}{\tbc{0.005}}\newcommand{\genMLPex}{\tbc{2.55}}
+\newcommand{\genKANin}{0.003}\newcommand{\genKANex}{0.37}
+\newcommand{\genMLPin}{0.005}\newcommand{\genMLPex}{2.55}
 % extracted-rule forms + per-feature fidelity (kan_full)
-\newcommand{\ruleGform}{\tbc{nonlinear}}\newcommand{\ruleGrtwo}{\tbc{0.36}}
-\newcommand{\ruleIform}{\tbc{near-linear}}\newcommand{\ruleIrtwo}{\tbc{0.88}}
-\newcommand{\ruleProform}{\tbc{linear}}\newcommand{\rulePrortwo}{\tbc{0.99}}
-\newcommand{\ruleFid}{\tbc{0.74}}
+\newcommand{\ruleGform}{nonlinear}\newcommand{\ruleGrtwo}{0.36}
+\newcommand{\ruleIform}{near-linear}\newcommand{\ruleIrtwo}{0.88}
+\newcommand{\ruleProform}{linear}\newcommand{\rulePrortwo}{0.99}
+\newcommand{\ruleFid}{0.74}
 % pareto knee + experiment scale
-\newcommand{\paretoKnee}{\tbc{0.5}}
-\newcommand{\Nnodes}{\tbc{24}}\newcommand{\Nseeds}{\tbc{20}}
-\newcommand{\Npasses}{\tbc{5}}\newcommand{\Nsamp}{\tbc{160}}
+\newcommand{\paretoKnee}{0.5}
+\newcommand{\Nnodes}{24}\newcommand{\Nseeds}{20}
+\newcommand{\Npasses}{5}\newcommand{\Nsamp}{160}
 
 \begin{document}
 
@@ -878,11 +878,11 @@ but holds across the whole drift range, including the high-interference regime t
 is hardest to serve. Fig.~\ref{fig:csifed} injects CSI estimation error into the
 federated loop (the surrogate sees $\hat g=g\,e^{\varepsilon}$,
 $\varepsilon\sim\mathcal N(0,\sigma_c^2)$, while the oracle uses the true gain) and
-sweeps $\sigma_c$. The KAN retains its edge over the MLP across low-to-moderate CSI
-error, the operating range of practical channel estimators; under very large error
-the two converge as the input becomes uninformative. This is the deployment-relevant
-counterpart to the centralized robustness check, and it confirms the advantage is
-not an artifact of perfect CSI.
+sweeps $\sigma_c$. At small CSI error, the operating range of practical channel
+estimators, the KAN keeps its advantage over the MLP; as the error grows the gain
+input becomes uninformative and the methods converge, with the MLP marginally ahead
+at the largest errors. The KAN advantage is thus real but is, honestly, a
+small-error effect; we report the full sweep rather than only the favourable point.
 
 \begin{figure}[t]
 \centering
@@ -914,8 +914,9 @@ drift range, not just on average.}
 \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
-\caption{Robustness to CSI estimation error in the federated loop. The KAN keeps its
-advantage across low-to-moderate error.}
+\caption{Robustness to CSI estimation error in the federated loop. The KAN leads at
+small error; the methods converge as the error grows and the input becomes
+uninformative.}
 \label{fig:csifed}
 \end{figure}
 
