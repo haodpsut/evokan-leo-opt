@@ -1,4 +1,4 @@
-mean R2=0.742
-g: linear (R2=0.357)
-I: linear (R2=0.878)
+mean R2=0.740
+g: linear (R2=0.350)
+I: linear (R2=0.879)
 p0: linear (R2=0.994)
