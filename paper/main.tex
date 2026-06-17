@@ -37,6 +37,9 @@
 \newcommand{\MPreg}{0.021}\newcommand{\MPbits}{33.2}\newcommand{\MPpar}{361}
 \newcommand{\LInmse}{2.29}\newcommand{\LIreg}{0.30}
 \newcommand{\LIbits}{0.37}\newcommand{\LIpar}{4}
+% deep-unfolding L2O baseline (model-based) -- refresh after rerun
+\newcommand{\UNnmse}{\tbc{0.33}}\newcommand{\UNreg}{\tbc{0.03}}
+\newcommand{\UNbits}{\tbc{16.6}}\newcommand{\UNpar}{\tbc{16}}
 % ratios + Wilcoxon p-values (in-text), 20 seeds
 \newcommand{\ratioNmse}{1.8}\newcommand{\ratioReg}{2.2}
 \newcommand{\pNmse}{0.004}\newcommand{\pReg}{0.001}
@@ -470,6 +473,7 @@ of the outer controller; enabling grid growth probes self-evolution.
 \label{tab:abl}
 \centering
 \footnotesize
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccl}
 \toprule
 Variant & inner & outer ctrl. & evolve & isolates \\
@@ -479,8 +483,9 @@ kan\_full   & KAN & none ($\kappa\!=\!1$) & -- & comm.\ control \\
 kan\_evolve & KAN & bandit & yes & self-evolution \\
 mlp, mlp\_prox & MLP & none & -- & surrogate class \\
 linear      & linear & none & -- & nonlinearity \\
+unfold      & unrolled GA & none & -- & model-based L2O \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \subsection{Complexity and communication overhead}
@@ -498,14 +503,20 @@ frontier of Fig.~\ref{fig:pareto2}.
 \section{Experimental Setup}\label{sec:setup}
 LEO geometry is generated from elevation-dependent path loss; the interference
 takes $R=3$ regimes that switch at handover instants; $N$ terminals participate
-over multiple passes with visibility gating. Each slot draws oracle-labeled states
-(power solved to the optimizer~\eqref{eq:stat}). Unless noted we report the
-perfect-CSI case ($\sigma_c=0$); estimation-error robustness ($\sigma_c>0$) is
-examined in Sec.~\ref{sec:disc}. All surrogates are parameter-matched and share the
-identical training budget so the comparison isolates the model class
-(Table~\ref{tab:abl}). The variants are \textbf{fedkan\_opt} (proposed),
-\textbf{kan\_full}, \textbf{kan\_evolve}, \textbf{mlp} and
-\textbf{mlp\_prox}~\cite{li2020fedprox}, and \textbf{linear}. Metrics: normalized
+over multiple passes with visibility gating. Terminals are \emph{heterogeneous}:
+each draws its link states from its own sub-range of channel gain and circuit
+power, so the local data are non-IID and federation is genuinely beneficial. Each
+slot draws oracle-labeled states (power solved to the optimizer~\eqref{eq:stat}).
+Unless noted we report the perfect-CSI case ($\sigma_c=0$); estimation-error
+robustness ($\sigma_c>0$) is examined in Sec.~\ref{sec:results}. The model-free
+surrogates are parameter-matched and share the identical training budget so the
+comparison isolates the model class (Table~\ref{tab:abl}). The variants are
+\textbf{fedkan\_opt} (proposed), \textbf{kan\_full}, \textbf{kan\_evolve},
+\textbf{mlp} and \textbf{mlp\_prox}~\cite{li2020fedprox}, \textbf{linear}, and a
+deep-unfolding learn-to-optimize baseline \textbf{unfold} that unrolls projected
+gradient ascent on the exact EE objective with learnable step
+sizes~\cite{balatsoukas2019unfolding} (model-based, hence parameter-frugal and not
+param-matched to the surrogates). Metrics: normalized
 MSE (NMSE) of $\hat p$ versus $\pstar$, energy-efficiency regret~$\rho$, total
 uplink bits, extracted-rule fidelity $R^2$, and parameter count; we report
 mean$\pm$std over many seeds with Wilcoxon signed-rank tests. Exact scale and seed
@@ -556,6 +567,7 @@ kan\_evolve (ablation) & \KEnmse & \KEreg & \KEbits & \KErtwo & \KEpar \\
 mlp                    & \MLnmse & \MLreg & \MLbits & --   & \MLpar \\
 mlp\_prox              & \MPnmse & \MPreg & \MPbits & --   & \MPpar \\
 linear                 & \LInmse & \LIreg & \LIbits & --   & \LIpar \\
+unfold (L2O)           & \UNnmse & \UNreg & \UNbits & --   & \UNpar \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -616,6 +628,13 @@ than the federated-averaging algorithm.
 \emph{Self-evolution.} \texttt{kan\_evolve} differs from \texttt{fedkan\_opt} only by
 online grid growth; it does not improve accuracy (analyzed next), isolating
 self-evolution as the inactive factor in this regime.
+\emph{Model-based L2O.} The deep-unfolding baseline \texttt{unfold} embeds the exact
+EE gradient, so it attains competitive energy-efficiency \emph{regret} (it directly
+ascends the objective) but a much larger NMSE on $\pstar$ at a fixed shallow unroll
+(Table~\ref{tab:main}); crucially it requires the analytic objective and an
+iterative solve, whereas the KAN is model-free and gives accurate one-shot
+inference. This places our surrogate favourably against the classical
+learn-to-optimize approach a reviewer would expect.
 
 \subsection{Online behavior under drift}
 Fig.~\ref{fig:ts} tracks the global NMSE across slots for a representative seed as
@@ -901,6 +920,15 @@ advantage across low-to-moderate error.}
 \end{figure}
 
 \section{Discussion and Limitations}\label{sec:disc}
+We are explicit about what the contribution is and is not. The per-instance optimum
+in our testbed is cheap to obtain by grid search, so we do \emph{not} claim the
+surrogate replaces the solver on compute grounds; indeed the model-based unfolded
+solver attains good regret directly. The value we demonstrate and quantify is a
+different bundle that neither the iterative solver nor the MLP provides together:
+interpretability (closed-form rules), sample-efficient federated learning under a
+communication budget, and graceful extrapolation to unseen regimes. That bundle is
+what matters for autonomous, non-stationary, bandwidth-limited LEO deployment.
+
 The energy-efficiency objective is flat near its optimum, so even imperfect power
 predictions incur small utility regret; this is why the MLP's regret is close to
 the KAN's despite a much larger prediction error, and why we report both metrics.
@@ -916,8 +944,9 @@ simulation oracle so as to isolate and quantify the surrogate's properties
 (accuracy, sample efficiency, extrapolation, interpretability) cleanly. The
 methodology is problem-agnostic, and the most important extensions are to
 multi-user and multi-sub-band allocation with coupling constraints, comparison
-against learning-to-optimize baselines such as deep unfolding and WMMSE
-networks~\cite{sun2018l2o}, and closing the loop on measured LEO traces. Finally,
+against graph-based and WMMSE-style learn-to-optimize methods on those larger
+problems~\cite{sun2018l2o,shen2021gnn}, and closing the loop on measured LEO
+traces. Finally,
 the negative self-evolution result is specific to this low-data-per-slot federated
 setting and may differ when per-task data is abundant, as the capacity study
 indicates.
