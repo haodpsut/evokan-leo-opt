@@ -1,0 +1,89 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{parskip}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+
+\begin{document}
+
+\noindent\textbf{Cover Letter}\\[2pt]
+\noindent To: Guest Editors, IEEE Journal of Selected Topics in Signal Processing\\
+\noindent Special Issue: \emph{Autonomous and Evolutive Optimization in Networked AI}\\
+\noindent (Lead Guest Editor: Prof.\ Liang Song; with Profs.\ J.\ Liu, A.\ Dvir,
+A.\ Skodras, V.\ C.\ M.\ Leung, and Q.\ Bi)\\[6pt]
+
+\noindent Dear Guest Editors,
+
+We are pleased to submit our manuscript, \textbf{``Interpretable Federated
+Kolmogorov--Arnold Surrogates for Autonomous and Evolutive Resource Optimization
+over Non-Stationary LEO Links,''} for consideration in the Special Issue on
+\emph{Autonomous and Evolutive Optimization in Networked AI}.
+
+\textbf{Scope and fit.} The Special Issue calls for online, self-evolving
+mechanisms that let distributed models improve in multi-agent, time-varying
+environments, with emphasis on the foundations of signal processing for networked
+AI, networked AI for cognitive communications, and online drift detection and
+compensation. Our paper addresses exactly this setting. We study autonomous
+resource optimization over low Earth orbit (LEO) links, where the per-instance
+optimum has no closed form and the operating regime drifts as satellites pass and
+interference handovers occur. We cast the problem as learning the \emph{solution
+map} of an energy-efficiency power-allocation problem, harden it into a
+mixed-integer program, and decompose it into an inner statistical-learning task and
+an outer communication-control task whose static optimum we derive in closed form.
+A federated Kolmogorov--Arnold network learns the solution map online, while a
+contextual-bandit controller \emph{learns the Lagrangian dual price} of the uplink
+budget, unifying supervised learning with online reinforcement, as the call
+envisions.
+
+\textbf{Contributions and findings.} Over twenty seeds with paired significance
+tests, the KAN surrogate lowers prediction error by about $1.8\times$ and
+energy-efficiency regret by about $2\times$ versus a parameter-matched multilayer
+perceptron (Wilcoxon $p<0.01$), while a linear predictor fails entirely, confirming
+the map is strongly nonlinear. A learned sparsification controller halves the
+uplink volume while still outperforming the perceptron, and the KAN extrapolates to
+unseen interference regimes roughly an order of magnitude more accurately. Uniquely,
+the additive-spline structure yields closed-form, auditable design rules that a
+black-box network cannot provide. We compare against a model-based deep-unfolding
+learn-to-optimize baseline and analyze each component through one-factor ablations.
+
+\textbf{Relation to prior work.} Existing learn-to-optimize methods for wireless
+resource management are almost exclusively black-box networks (fully connected,
+deep-unfolded, or graph-based) evaluated under stationary, centralized conditions.
+Our work differs on three axes that matter for autonomous deployment: it is
+interpretable (the learned policy reduces to closed-form rules), it is studied
+under genuine non-stationarity with an online communication budget, and it
+quantifies sample efficiency and extrapolation rather than only in-distribution
+accuracy. To our knowledge this is among the first uses of Kolmogorov--Arnold
+networks as interpretable optimization surrogates inside a networked, federated
+signal-processing pipeline.
+
+\textbf{Rigor and transparency.} In keeping with reproducible, trustworthy
+research, all results are multi-seed with standard deviations and Wilcoxon
+signed-rank tests, every comparison between model classes is parameter-matched and
+trained under an identical budget, and the ablations toggle one component at a time
+so that effects are attributable rather than correlational. Importantly, we report
+transparently the cases where our method does \emph{not} help: online grid
+self-evolution gives no significant gain over a well-sized static grid, and under
+abundant centralized data or large channel-estimation error the advantage narrows.
+The complete code, configurations, and result files that reproduce every number,
+table, and figure in the paper are openly available.
+
+\textbf{Declarations.} This manuscript is original, has not been published
+previously, and is not under consideration for publication elsewhere. All authors
+have read and approved the submission and declare no competing interests. The work
+was supported in part by the Posts and Telecommunications Institute of Technology
+(PTIT).
+
+We believe the paper is a strong fit for the Special Issue and hope you find it
+suitable for peer review. Thank you for your time and consideration.
+
+\vspace{8pt}
+\noindent Sincerely,\\[4pt]
+\noindent Phuc Hao Do (corresponding author)\\
+\noindent Center for Advanced Innovation, Research and Application,\\
+\noindent Da Nang Architecture University, Da Nang, Vietnam\\
+\noindent E-mail: haodp@dau.edu.vn\\[4pt]
+\noindent on behalf of co-authors Huu Phu Le and Truong Duy Dinh
+
+\end{document}

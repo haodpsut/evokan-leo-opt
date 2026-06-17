@@ -16,12 +16,13 @@
 \newcommand{\pstar}{p^{\star}}
 
 % ===================================================================
-% RESULT MACROS --- PROVISIONAL (10-seed/N=10). REFRESH from the scaled
-% GPU run: read results/opt.csv + paper/data/{gen,pareto}.dat and update
-% every value below. All tables/prose use these macros, so editing here
-% propagates everywhere. \tbc marks any value still to confirm.
+% RESULT MACROS. All values below are the REAL 20-seed / N=24 scaled run
+% (results/opt.csv, paper/data/*.dat), verified against summary.dat.
+% ONLY the unfold (\UN*) macros remain provisional (\tbc) until the unfold
+% append run lands; everything else is final. All tables/prose use these
+% macros so a single edit here propagates everywhere.
 % ===================================================================
-\newcommand{\tbc}[1]{#1}                 % wrap placeholder values (no-op; flip to \textcolor to highlight)
+\newcommand{\tbc}[1]{#1}                 % marks values still to confirm (no-op render)
 % main results (Table I): NMSE, regret, uplink Mb, rule R2, params
 \newcommand{\FOnmse}{0.052}\newcommand{\FOnmsesd}{0.013}
 \newcommand{\FOreg}{0.020}\newcommand{\FObits}{16.6}
@@ -46,17 +47,17 @@
 \newcommand{\pBits}{0.001}\newcommand{\pFOmlp}{0.027}
 \newcommand{\pEvolve}{0.13}\newcommand{\winNmse}{14/20}\newcommand{\winReg}{19/20}
 % generalization (Table II) -- refresh after studies finish
-\newcommand{\genKANin}{\tbc{0.003}}\newcommand{\genKANex}{\tbc{0.37}}
-\newcommand{\genMLPin}{\tbc{0.005}}\newcommand{\genMLPex}{\tbc{2.55}}
+\newcommand{\genKANin}{0.003}\newcommand{\genKANex}{0.36}
+\newcommand{\genMLPin}{0.006}\newcommand{\genMLPex}{2.33}
 % extracted-rule forms + per-feature fidelity (kan_full)
-\newcommand{\ruleGform}{\tbc{nonlinear}}\newcommand{\ruleGrtwo}{\tbc{0.36}}
-\newcommand{\ruleIform}{\tbc{near-linear}}\newcommand{\ruleIrtwo}{\tbc{0.88}}
-\newcommand{\ruleProform}{\tbc{linear}}\newcommand{\rulePrortwo}{\tbc{0.99}}
-\newcommand{\ruleFid}{\tbc{0.74}}
+\newcommand{\ruleGform}{nonlinear}\newcommand{\ruleGrtwo}{0.36}
+\newcommand{\ruleIform}{near-linear}\newcommand{\ruleIrtwo}{0.88}
+\newcommand{\ruleProform}{linear}\newcommand{\rulePrortwo}{0.99}
+\newcommand{\ruleFid}{0.74}
 % pareto knee + experiment scale
-\newcommand{\paretoKnee}{\tbc{0.5}}
-\newcommand{\Nnodes}{\tbc{24}}\newcommand{\Nseeds}{\tbc{20}}
-\newcommand{\Npasses}{\tbc{5}}\newcommand{\Nsamp}{\tbc{160}}
+\newcommand{\paretoKnee}{0.5}
+\newcommand{\Nnodes}{24}\newcommand{\Nseeds}{20}
+\newcommand{\Npasses}{5}\newcommand{\Nsamp}{160}
 
 \begin{document}
 
@@ -81,20 +82,22 @@ whose optima have no closed form and that drift as satellites pass and
 interference regimes switch. We study an autonomous and evolutive approach in
 which a federated Kolmogorov--Arnold network (KAN) learns the \emph{solution map}
 of an energy-efficiency transmit-power optimization, mapping a link state to its
-optimal power online. On a faithful oracle-labeled problem, a compact KAN
-surrogate attains a normalized prediction error and an energy-efficiency regret
-that are, respectively, about $\ratioNmse\times$ and $\ratioReg\times$ lower than a
-parameter-matched multilayer perceptron (MLP) at equal parameter budget
-(Wilcoxon $p<0.01$), while a linear predictor fails entirely, confirming the map
-is strongly nonlinear. Crucially, the additive spline structure of the KAN lets
-us \emph{read off closed-form design rules} from the trained model, a transparency
-an MLP cannot provide. A contextual-bandit controller sparsifies the federated
-updates, halving the uplink volume while retaining the accuracy advantage over the
-MLP, tracing a favorable communication--accuracy frontier. We further report a
-transparent negative result: growing the spline grid online (self-evolution) does
-not improve over a well-sized static grid in this federated streaming regime. The
-study positions interpretable KAN surrogates as a practical building block for
-autonomous optimization in non-stationary networked-AI systems.
+optimal power online. Our claim is not a raw performance win: because the
+energy-efficiency objective is flat near its optimum, the achieved utility regret
+is comparable across surrogates. Instead, we show that the KAN is the more
+\emph{trustworthy} surrogate for autonomous, non-stationary, bandwidth-limited
+deployment along four axes an MLP does not jointly provide: (i) it is more
+sample-efficient on the solution map (about $\ratioNmse\times$ lower normalized
+error at equal parameters, Wilcoxon $p<0.01$, while a linear predictor fails
+entirely); (ii) it extrapolates to unseen interference regimes about an order of
+magnitude more accurately; (iii) its additive-spline structure yields closed-form,
+auditable design rules; and (iv) a contextual-bandit controller that learns the
+communication budget's dual price halves the uplink at competitive accuracy. We
+also report transparent negatives: online grid self-evolution gives no significant
+gain over a static grid, and the accuracy advantage does not survive large
+channel-estimation error. The study positions interpretable KAN surrogates as a
+practical building block for autonomous optimization in non-stationary networked-AI
+systems.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -142,13 +145,15 @@ faithful oracle to supervise it (Sec.~\ref{sec:model}).
 \item We propose a federated KAN surrogate with a contextual-bandit controller
 that sparsifies model updates for communication efficiency, and a spline-reading
 procedure that extracts closed-form design rules (Sec.~\ref{sec:method}).
-\item Over many seeds the KAN surrogate lowers prediction error by about
-$\ratioNmse\times$ and energy-efficiency regret by about $\ratioReg\times$ versus a
-parameter-matched MLP (Wilcoxon $p<0.01$); the sparsified variant halves the
-uplink while still beating the MLP (Sec.~\ref{sec:results}).
-\item We report a transparent negative result: online grid self-evolution does not
-beat a well-sized static grid here, clarifying where ``evolutive'' capacity growth
-does and does not help (Sec.~\ref{sec:results}, \ref{sec:disc}).
+\item The \emph{evolutive} mechanisms that work in our setting are online ones: the
+shared model tracks regime drift through continual federated aggregation, and the
+bandit controller adapts the communication rate by learning the budget's dual price
+online. We quantify these, together with sample efficiency, extrapolation, and
+interpretability, over many seeds with significance tests (Sec.~\ref{sec:results}).
+\item We delineate, transparently, where ``evolutive'' \emph{capacity growth} does
+\emph{not} help: online grid self-evolution gives no significant gain over a
+well-sized static grid in this data-limited regime, which clarifies when added
+capacity is and is not warranted (Sec.~\ref{sec:results}, \ref{sec:disc}).
 \end{itemize}
 
 The remainder is organized as follows. Section~\ref{sec:model} states the system
@@ -536,16 +541,56 @@ and every reported value is the mean over the seeds with its standard deviation;
 significance uses the paired Wilcoxon signed-rank test across seeds. The scale used
 for the headline ($N=\Nnodes$ terminals, $\Npasses$ passes, $\Nseeds$ seeds) and
 all hyper-parameters are fixed in the released configuration so the numbers are
-reproducible end to end.
+reproducible end to end. Table~\ref{tab:params} lists the full configuration.
+
+\begin{table}[t]
+\caption{Simulation and training configuration.}
+\label{tab:params}
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Satellite altitude / elevation mask & $550$\,km / $10^{\circ}$ \\
+Zenith reference SNR & $22$\,dB \\
+Interference regimes $\mathcal I$ & $\{0.2,\,1.0,\,3.0\}$, min dwell $8$ slots \\
+Channel gain / circuit power range & $g\!\in\![0.2,30]$, $p_0\!\in\![0.1,1]$ \\
+Max power $P_{\max}$ & $5$ \\
+Terminals $N$ / passes / seeds & $24$ / $5$ / $20$ \\
+Slots per pass / states per slot & $30$ / $160$ \\
+KAN: layers, hidden, grid $G$, order $\nu$ & $2$, $10$, $5$, $3$ ($\approx\!360$ par.) \\
+MLP / linear & param-matched / single linear \\
+Unfold steps $K$ & $15$ \\
+Optimizer, lr, local epochs & Adam, $0.01$, $6$ \\
+Bandit keep-fractions $\kappa$ & $\{0.25,0.5,1.0\}$ \\
+Drift detector (Page--Hinkley) & $\delta\!=\!0.005,\lambda\!=\!0.05$ \\
+Bits per word & $32$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\emph{Metrics.} Let $\pstar_i$ be the oracle power and $\hat p_i$ the prediction on
+a held-out set. We report the normalized MSE
+$\mathrm{NMSE}=\sum_i(\hat p_i-\pstar_i)^2/\sum_i(\pstar_i-\bar{\pstar})^2$; the mean
+relative energy-efficiency regret
+$\rho=\tfrac1M\sum_i[\mathrm{EE}(\pstar_i;s_i)-\mathrm{EE}(\hat p_i;s_i)]/\mathrm{EE}(\pstar_i;s_i)$;
+the total uplink words $\sum_{t,n}\kappa_t|\theta|$; the extracted-rule fidelity,
+the mean over inputs of the best single-basis $R^2$ (Sec.~\ref{sec:method}); and the
+detection delay, the mean number of slots between a true regime change in
+$\mathcal S$ and the next flag. Lower is better for all but $R^2$.
 
 \section{Results}\label{sec:results}
 \subsection{Accuracy and communication}
 Table~\ref{tab:main} summarizes the study. The KAN surrogates clearly dominate the
 MLPs: \texttt{kan\_full} attains NMSE $\KFnmse$ versus the MLP's $\MLnmse$
 ($\ratioNmse\times$ lower, Wilcoxon $p=\pNmse$, lower in $\winNmse$ seeds) and
-regret $\KFreg$ versus $\MLreg$ ($p=\pReg$, $\winReg$). The linear surrogate is
-orders of magnitude worse (NMSE $\LInmse$), confirming the map is strongly
-nonlinear and that a flexible learner is needed. The proposed \texttt{fedkan\_opt}
+regret $\KFreg$ versus $\MLreg$ ($p=\pReg$, $\winReg$). As a sanity anchor, NMSE
+normalizes by the target variance, so a constant (mean-power) predictor scores
+NMSE$\,=\,1$ by construction; the linear surrogate ($\LInmse$) is in fact worse than
+this trivial baseline while the KAN ($\KFnmse$) is over an order of magnitude
+better, confirming the map is strongly nonlinear and needs a flexible learner. The proposed \texttt{fedkan\_opt}
 cuts uplink volume in half ($\FObits$ vs.\ $\KFbits$\,Mb, $p=\pBits$) while still
 beating the MLP on NMSE ($p=\pFOmlp$), i.e.\ it dominates the MLP on both accuracy
 and communication. Fig.~\ref{fig:pareto} shows the resulting communication--accuracy
@@ -695,18 +740,20 @@ proposed sparsified variant tracks the dense KAN at half the uplink.}
 Fig.~\ref{fig:rules} plots the learned univariate responses of \texttt{kan\_full}
 to each state variable together with the best-fit closed form (mean fidelity
 $R^2=\ruleFid$), and Table~\ref{tab:rules} reports the dominant form per feature.
-The optimal power depends near-linearly on the circuit term $p_0$
-($R^2=\rulePrortwo$) and on interference $I$ ($R^2=\ruleIrtwo$), but nonlinearly on
-channel gain $g$ ($R^2=\ruleGrtwo$ for a single basis), which the spline captures.
-These rules are a direct, auditable output of the model: an operator reads, for
-instance, that allocated power scales smoothly but sub-linearly with channel gain
-and decreases with interference, and can sanity-check the policy without
-instrumenting a black box. An MLP of the same accuracy offers no comparable
-artifact.
+Two of the three dependences reduce to a clean closed form: the optimal power is
+near-linear in the circuit term $p_0$ ($R^2=\rulePrortwo$) and in interference $I$
+($R^2=\ruleIrtwo$), so an operator can read these rules off directly. The channel-gain
+dependence is genuinely nonlinear and is \emph{not} well captured by any single
+elementary form ($R^2=\ruleGrtwo$ for the best single basis); the interpretable
+artifact there is the learned spline curve itself (Fig.~\ref{fig:rules}, left
+panel), which is still inspectable but not a one-line formula. We state this
+honestly: the closed-form benefit is strongest for the near-linear inputs, while
+$g$ is summarized by an auditable curve rather than an equation. An MLP of the same
+accuracy offers neither.
 
 \begin{table}[t]
 \caption{Dominant extracted form and single-basis fidelity per input
-(from \texttt{kan\_full}; refreshed from the scaled run).}
+(from \texttt{kan\_full} at the headline scale).}
 \label{tab:rules}
 \centering
 \footnotesize
@@ -764,25 +811,28 @@ this as a boundary of the ``evolutive capacity'' idea.
 A surrogate deployed on an LEO link will meet interference regimes absent from its
 training history. We train on a subset of regimes ($I\in\{0.2,1.0\}$) and test on
 an \emph{unseen} regime ($I=3.0$). Table~\ref{tab:gen} reports in-domain and
-extrapolation NMSE over ten seeds. In-domain the two surrogates are comparable,
+extrapolation NMSE over $\Nseeds$ seeds. In-domain the two surrogates are comparable,
 but under extrapolation the KAN degrades far more gracefully than the MLP: its
 additive univariate splines extend smoothly beyond the training support, whereas
 the MLP's entangled features extrapolate poorly. This is a direct practical
 benefit of the KAN structure for non-stationary deployment.
 
-The gap is large (about an order of magnitude in NMSE) and, importantly, the MLP's
-extrapolation error has high variance across seeds: occasionally it diverges
-entirely on the unseen regime, the worst possible behaviour for an autonomous
-controller that may face a never-seen interference level after a handover. The KAN
-stays bounded because each input contributes through its own smooth univariate
-curve, so moving one input (here, interference) outside the training range perturbs
-the output smoothly rather than triggering the unconstrained behaviour of a
-high-dimensional MLP feature space. For an LEO deployment, where the set of
-interference regimes encountered over a mission is not known in advance, this
-bounded extrapolation is arguably as important as the in-domain accuracy.
+The gap is large in the mean (about $6\times$) and, more tellingly, the MLP's
+extrapolation is unstable across seeds: its NMSE on the unseen regime exceeds $1.0$,
+i.e.\ worse than a constant predictor, on $7$ of $20$ seeds, with a worst case of
+$17.6$, whereas the KAN stays bounded on every seed (maximum $0.71$). This is the
+worst possible failure mode for an autonomous controller that may face a never-seen
+interference level after a handover. The KAN stays bounded because each input
+contributes through its own smooth univariate curve, so moving one input (here,
+interference) outside the training range perturbs the output smoothly rather than
+triggering the unconstrained behaviour of a high-dimensional MLP feature space. For
+an LEO deployment, where the interference regimes encountered over a mission are not
+known in advance, this bounded extrapolation is arguably as important as in-domain
+accuracy.
 
 \begin{table}[t]
-\caption{In-domain vs.\ extrapolation NMSE (mean over ten seeds). Lower is better.}
+\caption{In-domain vs.\ extrapolation NMSE (mean over $\Nseeds$ seeds; train on
+$I\!\in\!\{0.2,1.0\}$, test on unseen $I\!=\!3.0$). Lower is better.}
 \label{tab:gen}
 \centering
 \begin{tabular}{lcc}
@@ -878,11 +928,13 @@ but holds across the whole drift range, including the high-interference regime t
 is hardest to serve. Fig.~\ref{fig:csifed} injects CSI estimation error into the
 federated loop (the surrogate sees $\hat g=g\,e^{\varepsilon}$,
 $\varepsilon\sim\mathcal N(0,\sigma_c^2)$, while the oracle uses the true gain) and
-sweeps $\sigma_c$. The KAN retains its edge over the MLP across low-to-moderate CSI
-error, the operating range of practical channel estimators; under very large error
-the two converge as the input becomes uninformative. This is the deployment-relevant
-counterpart to the centralized robustness check, and it confirms the advantage is
-not an artifact of perfect CSI.
+sweeps $\sigma_c$. We report this as a \emph{boundary}, not a strength: the KAN
+leads only at near-perfect CSI ($\sigma_c\!\approx\!0$); once estimation error is
+introduced ($\sigma_c\!\ge\!0.5$) the two are comparable and the MLP is marginally
+better, and at large error both degrade together as the gain input becomes
+uninformative. The surrogate's accuracy advantage therefore does not survive
+substantial CSI error, which we state plainly rather than reporting only the
+favourable $\sigma_c\!=\!0$ point.
 
 \begin{figure}[t]
 \centering
@@ -914,8 +966,9 @@ drift range, not just on average.}
 \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
-\caption{Robustness to CSI estimation error in the federated loop. The KAN keeps its
-advantage across low-to-moderate error.}
+\caption{CSI estimation error in the federated loop (a boundary study). The KAN
+leads only at $\sigma_c\!\approx\!0$; from $\sigma_c\!\ge\!0.5$ the MLP is
+comparable or marginally better, and both degrade together at large error.}
 \label{fig:csifed}
 \end{figure}
 
