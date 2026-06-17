@@ -32,20 +32,23 @@ map} of an energy-efficiency power-allocation problem, harden it into a
 mixed-integer program, and decompose it into an inner statistical-learning task and
 an outer communication-control task whose static optimum we derive in closed form.
 A federated Kolmogorov--Arnold network learns the solution map online, while a
-contextual-bandit controller \emph{learns the Lagrangian dual price} of the uplink
-budget, unifying supervised learning with online reinforcement, as the call
-envisions.
+contextual-bandit controller learns, from feedback, the per-slot update sparsity
+(the operating point implied by the Lagrangian dual price of the uplink budget),
+unifying supervised learning with online decision making, as the call envisions.
 
-\textbf{Contributions and findings.} Over twenty seeds with paired significance
-tests, the KAN surrogate lowers prediction error by about $1.8\times$ and
-energy-efficiency regret by about $2\times$ versus a parameter-matched multilayer
-perceptron (Wilcoxon $p<0.01$), while a linear predictor fails entirely, confirming
-the map is strongly nonlinear. A learned sparsification controller halves the
-uplink volume while still outperforming the perceptron, and the KAN extrapolates to
-unseen interference regimes roughly an order of magnitude more accurately. Uniquely,
-the additive-spline structure yields closed-form, auditable design rules that a
-black-box network cannot provide. We compare against a model-based deep-unfolding
-learn-to-optimize baseline and analyze each component through one-factor ablations.
+\textbf{Contributions and findings.} Because the energy-efficiency objective is
+flat near its optimum, the achieved utility regret is comparable across surrogates;
+our claim is therefore not a raw performance win but that the KAN is the more
+\emph{trustworthy} surrogate along four axes a black-box multilayer perceptron (MLP)
+does not jointly provide. Over twenty seeds with paired significance tests: (i) it
+is more sample-efficient on the solution map, about $1.8\times$ lower normalized
+error at equal parameters (Wilcoxon $p<0.01$), while a linear predictor and a
+model-based deep-unfolding solver are both clearly worse; (ii) it extrapolates to
+unseen interference regimes roughly an order of magnitude more accurately, where the
+parameter-matched MLP diverges on a third of the seeds; (iii) its additive-spline
+structure yields closed-form, auditable design rules a black box cannot provide; and
+(iv) a learned sparsification controller halves the uplink while remaining
+competitive. Every component is isolated by one-factor ablations.
 
 \textbf{Relation to prior work.} Existing learn-to-optimize methods for wireless
 resource management are almost exclusively black-box networks (fully connected,
