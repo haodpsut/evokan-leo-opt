@@ -17,7 +17,7 @@
 \definecolor{cMlpp}{RGB}{204,121,167}   % mlp_prox -- purple
 \definecolor{cGray}{RGB}{110,110,110}   % linear / unfold / fits
 \pgfplotsset{every axis/.append style={
-  grid=major, grid style={gray!22,very thin}, line width=1pt, mark size=2.6pt,
+  grid=major, grid style={gray!30,thin}, line width=1.1pt, mark size=2.8pt,
   tick label style={font=\footnotesize}, label style={font=\small},
   title style={font=\small\bfseries},
   legend style={font=\scriptsize,draw=gray!45,fill=white,fill opacity=0.9,
@@ -31,10 +31,9 @@
 
 % ===================================================================
 % RESULT MACROS. All values below are the REAL 20-seed / N=24 scaled run
-% (results/opt.csv, paper/data/*.dat), verified against summary.dat.
-% ONLY the unfold (\UN*) macros remain provisional (\tbc) until the unfold
-% append run lands; everything else is final. All tables/prose use these
-% macros so a single edit here propagates everywhere.
+% (results/opt.csv, paper/data/*.dat), verified against summary.dat and gen.dat.
+% All seven methods (including unfold) are final; no value remains provisional.
+% All tables/prose use these macros so a single edit here propagates everywhere.
 % ===================================================================
 \newcommand{\tbc}[1]{#1}                 % marks values still to confirm (no-op render)
 % main results (Table I): NMSE, regret, uplink Mb, rule R2, params
@@ -62,7 +61,7 @@
 \newcommand{\pEvolve}{0.13}\newcommand{\winNmse}{14/20}\newcommand{\winReg}{19/20}
 % generalization (Table II) -- refresh after studies finish
 \newcommand{\genKANin}{0.003}\newcommand{\genKANex}{0.36}
-\newcommand{\genMLPin}{0.006}\newcommand{\genMLPex}{2.33}
+\newcommand{\genMLPin}{0.005}\newcommand{\genMLPex}{2.33}
 % extracted-rule forms + per-feature fidelity (kan_full)
 \newcommand{\ruleGform}{nonlinear}\newcommand{\ruleGrtwo}{0.35}
 \newcommand{\ruleIform}{near-linear}\newcommand{\ruleIrtwo}{0.88}
@@ -234,24 +233,30 @@ not~\cite{wang2019leoml}.
 \begin{figure}[t]
 \centering
 \resizebox{\columnwidth}{!}{%
-\begin{tikzpicture}[font=\small,>=latex,node distance=4mm,
-  blk/.style={draw,rounded corners,align=center,minimum height=8mm,inner sep=3pt},
-  leo/.style={blk,fill=gray!12,text=black},
-  inn/.style={blk,fill=green!10,text=black},
-  octrl/.style={blk,fill=orange!15,text=black},
-  srv/.style={blk,fill=blue!8,text=black}]
+\begin{tikzpicture}[font=\small,>={Stealth[length=2.4mm]},node distance=13mm and 15mm,
+  blk/.style={draw,semithick,rounded corners,align=center,minimum height=11mm,
+    minimum width=18mm,inner sep=5pt},
+  leo/.style={blk,fill=gray!25,text=black},
+  neutral/.style={blk,fill=gray!12,text=black},
+  inn/.style={blk,fill=cKanfull!30,draw=cKanfull,line width=0.9pt,text=black},
+  octrl/.style={blk,fill=cEvolve!38,draw=cEvolve,line width=0.9pt,text=black},
+  srv/.style={blk,fill=cOurs!22,draw=cOurs,line width=0.9pt,text=black},
+  flow/.style={->,semithick},
+  lbl/.style={font=\scriptsize,fill=white,inner sep=1.5pt}]
 \node[leo] (leo) {LEO pass\\elevation sweep\\$+$ handovers};
-\node[blk,fill=gray!4,right=7mm of leo] (state) {terminal $n$\\state $\hat s_{n,t}$\\$(\hat g,I,p_0)$};
-\node[inn,right=7mm of state] (kan) {KAN surrogate\\$\hat p_\theta$ (inner)};
-\node[blk,fill=gray!4,right=7mm of kan] (act) {power\\$\hat p_{n,t}$};
-\node[octrl,below=7mm of kan] (band) {bandit ctrl.\\$\kappa_t$ (outer)};
-\node[srv,left=7mm of band] (srv) {server\\sparse FedAvg\\$\theta_t$};
-\draw[->] (leo) -- node[above,font=\scriptsize]{drift $\mathcal D_t$} (state);
-\draw[->] (state) -- (kan);
-\draw[->] (kan) -- (act);
-\draw[->] (kan) -- node[right,font=\scriptsize]{$\Delta\theta_{n,t}$} (band);
-\draw[->] (band) -- node[above,font=\scriptsize]{$\kappa_t|\theta|$ bits} (srv);
-\draw[->] (srv.west) -| node[near start,below,font=\scriptsize]{broadcast $\theta_{t-1}$} ([xshift=-4mm]state.west) |- (state.west);
+\node[neutral,right=of leo] (state) {terminal $n$\\state $\hat s_{n,t}$\\$(\hat g,I,p_0)$};
+\node[inn,right=of state] (kan) {KAN surrogate\\$\hat p_\theta$ (inner)};
+\node[neutral,right=of kan] (act) {power\\$\hat p_{n,t}$};
+\node[octrl,below=of kan] (band) {bandit ctrl.\\$\kappa_t$ (outer)};
+\node[srv,left=of band] (srv) {server\\sparse FedAvg\\$\theta_t$};
+\draw[flow] (leo) -- node[lbl,above]{drift $\mathcal D_t$} (state);
+\draw[flow] (state) -- (kan);
+\draw[flow] (kan) -- node[lbl,above]{$\hat p_{n,t}$} (act);
+\draw[flow] (kan) -- node[lbl,right]{$\Delta\theta_{n,t}$} (band);
+\draw[flow] (band) -- node[lbl,above]{$\kappa_t|\theta|$ bits} (srv);
+% broadcast feedback: drop below the row from the server and rise into the terminal
+\draw[flow] (srv.south) |- ([yshift=-9mm]band.south -| band)
+  node[lbl,pos=0.72,below]{broadcast $\theta_{t-1}$} -| (state.south);
 \end{tikzpicture}}
 \caption{System and information flow. As the LEO geometry and interference regime
 drift, each terminal feeds its (estimated) state to a shared KAN surrogate (inner
@@ -642,11 +647,11 @@ unfold (L2O)           & \UNnmse & \UNreg & \UNbits & --   & \UNpar \\
 \begin{tikzpicture}
 \begin{axis}[xlabel={uplink volume (Mb)},ylabel={NMSE of $\hat p$ vs.\ $\pstar$},
   xmin=12,xmax=40,ymin=0,ymax=0.10,clip=false]
-\addplot[only marks,mark=*,cOurs,mark size=3.4pt] coordinates {(\FObits,\FOnmse)};
-\addplot[only marks,mark=square*,cKanfull] coordinates {(\KFbits,\KFnmse)};
-\addplot[only marks,mark=diamond*,cEvolve] coordinates {(\KEbits,\KEnmse)};
-\addplot[only marks,mark=triangle*,cMlp] coordinates {(\MLbits,\MLnmse)};
-\addplot[only marks,mark=pentagon*,cMlpp] coordinates {(\MPbits,\MPnmse)};
+\addplot[only marks,mark=*,cOurs,mark size=4.4pt,mark options={draw=cOurs!60!black,line width=0.7pt}] coordinates {(\FObits,\FOnmse)};
+\addplot[only marks,mark=square*,cKanfull,mark size=3.4pt,mark options={draw=cKanfull!60!black}] coordinates {(\KFbits,\KFnmse)};
+\addplot[only marks,mark=diamond*,cEvolve,mark size=3.6pt,mark options={draw=cEvolve!65!black}] coordinates {(\KEbits,\KEnmse)};
+\addplot[only marks,mark=triangle*,cMlp,mark size=3.6pt,mark options={draw=cMlp!60!black}] coordinates {(\MLbits,\MLnmse)};
+\addplot[only marks,mark=pentagon*,cMlpp,mark size=3.6pt,mark options={draw=cMlpp!60!black}] coordinates {(\MPbits,\MPnmse)};
 \node[cOurs,anchor=north,font=\scriptsize\bfseries] at (axis cs:\FObits,\FOnmse) {ours};
 \node[anchor=west,font=\scriptsize] at (axis cs:\KFbits,\KFnmse) {kan\_full};
 \node[anchor=south,font=\scriptsize] at (axis cs:\KEbits,\KEnmse) {kan\_evolve};
@@ -673,10 +678,10 @@ the uplink) and halves the uplink of the dense \texttt{kan\_full}.}
   ymajorgrids,grid style={gray!25},clip=false,
   error bars/y dir=both,error bars/y explicit,
   error bars/error bar style={cGray}]
-\addplot[fill=cOurs,draw=cOurs,bar shift=0pt] coordinates {(a,\FOnmse)+-(0,\FOnmsesd)};
-\addplot[fill=cKanfull,draw=cKanfull,bar shift=0pt] coordinates {(b,\KFnmse)+-(0,\KFnmsesd)};
-\addplot[fill=cMlp,draw=cMlp,bar shift=0pt] coordinates {(c,\MLnmse)+-(0,\MLnmsesd)};
-\addplot[fill=cMlpp,draw=cMlpp,bar shift=0pt] coordinates {(d,\MPnmse)+-(0,\MPnmsesd)};
+\addplot[fill=cOurs,fill opacity=0.9,draw=cOurs!55!black,line width=0.8pt,bar shift=0pt] coordinates {(a,\FOnmse)+-(0,\FOnmsesd)};
+\addplot[fill=cKanfull,fill opacity=0.9,draw=cKanfull!55!black,line width=0.8pt,bar shift=0pt] coordinates {(b,\KFnmse)+-(0,\KFnmsesd)};
+\addplot[fill=cMlp,fill opacity=0.9,draw=cMlp!55!black,line width=0.8pt,bar shift=0pt] coordinates {(c,\MLnmse)+-(0,\MLnmsesd)};
+\addplot[fill=cMlpp,fill opacity=0.9,draw=cMlpp!55!black,line width=0.8pt,bar shift=0pt] coordinates {(d,\MPnmse)+-(0,\MPnmsesd)};
 % value labels placed above each error-bar cap (mean+std) so they never touch bars or caps
 \node[anchor=south,font=\small] at (axis cs:a,0.071) {0.052};
 \node[anchor=south,font=\small] at (axis cs:b,0.059) {0.041};
@@ -747,7 +752,7 @@ multi-seed protocol.
   xmin=14,ymin=0,ymax=0.62,legend columns=3,legend style={at={(0.5,1.02)},anchor=south}]
 \addplot[name path=fu,draw=none,forget plot] table[x=slot,y expr=\thisrow{fo}+\thisrow{fo_sd}] {data/conv.dat};
 \addplot[name path=fl,draw=none,forget plot] table[x=slot,y expr=\thisrow{fo}-\thisrow{fo_sd}] {data/conv.dat};
-\addplot[cOurs!15,forget plot] fill between[of=fu and fl];
+\addplot[cOurs!28,forget plot] fill between[of=fu and fl];
 \addplot[cKanfull,thick] table[x=slot,y=kf] {data/conv.dat}; \addlegendentry{kan\_full}
 \addplot[cOurs,very thick,dashed] table[x=slot,y=fo] {data/conv.dat}; \addlegendentry{ours ($\pm$std)}
 \addplot[cMlp,thick,densely dotted] table[x=slot,y=mlp] {data/conv.dat}; \addlegendentry{mlp}
@@ -921,9 +926,9 @@ budget varies.
 \begin{tikzpicture}
 \begin{axis}[xlabel={uplink volume (Mb)},ylabel={final NMSE (log)},ymode=log,
   legend pos=north west,clip=false]
-\addplot[cKanfull,very thick,mark=*] table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto.dat};
+\addplot[cKanfull,very thick,mark=*,mark size=3pt,mark options={draw=cKanfull!60!black}] table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto.dat};
 \addlegendentry{KAN, keep-fraction sweep}
-\addplot[cOurs,only marks,mark=star,mark size=4pt]
+\addplot[cOurs,only marks,mark=star,mark size=5pt,mark options={line width=1.1pt}]
   table[x expr=\thisrow{bits}/1e6,y=nmse] {data/pareto_bandit.dat};
 \addlegendentry{fedkan\_opt (bandit)}
 \node[anchor=south,font=\scriptsize,cKanfull] at (axis cs:4.5,0.057) {knee ($\kappa\!\approx\!0.5$)};
@@ -959,12 +964,12 @@ data-limited federated deployment.
 \begin{axis}[name=sa,width=4.7cm,height=3.8cm,xlabel={\# terminals},
   ylabel={final NMSE},ymin=0.055,ymax=0.095,title={(a) federated scaling},
   error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
-\addplot[cOurs,very thick,mark=*] table[x=nodes,y=nmse,y error=nmse_sd] {data/scaling.dat};
+\addplot[cOurs,very thick,mark=*,mark size=3pt,mark options={draw=cOurs!60!black}] table[x=nodes,y=nmse,y error=nmse_sd] {data/scaling.dat};
 \end{axis}
 \begin{axis}[name=sb,at={($(sa.east)+(1.2cm,0)$)},anchor=west,width=4.7cm,height=3.8cm,
   xlabel={KAN grid size},ylabel={NMSE (log)},ymode=log,title={(b) centralized capacity},
   error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
-\addplot[cKanfull,very thick,mark=square*] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
+\addplot[cKanfull,very thick,mark=square*,mark size=2.8pt,mark options={draw=cKanfull!60!black}] table[x=grid,y=nmse,y error=nmse_sd] {data/capacity.dat};
 \end{axis}
 \end{tikzpicture}}
 \caption{(a) Federated accuracy improves with more terminals then saturates around
@@ -999,9 +1004,9 @@ favourable $\sigma_c\!=\!0$ point.
   enlarge x limits=0.32,ymajorgrids,grid style={gray!25},
   legend columns=3,legend style={at={(0.5,1.03)},anchor=south,draw=gray!50,
     font=\small,/tikz/every even column/.append style={column sep=8pt}}]
-\addplot[fill=cOurs,draw=cOurs] table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
-\addplot[fill=cKanfull,draw=cKanfull] table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
-\addplot[fill=cMlp,draw=cMlp] table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
+\addplot[fill=cOurs,fill opacity=0.9,draw=cOurs!55!black,line width=0.7pt] table[x=regime,y=fedkan_opt] {data/regime.dat}; \addlegendentry{ours}
+\addplot[fill=cKanfull,fill opacity=0.9,draw=cKanfull!55!black,line width=0.7pt] table[x=regime,y=kan_full] {data/regime.dat}; \addlegendentry{kan\_full}
+\addplot[fill=cMlp,fill opacity=0.9,draw=cMlp!55!black,line width=0.7pt] table[x=regime,y=mlp] {data/regime.dat}; \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
 \caption{Final NMSE per interference regime. The KAN variants are at or below the
@@ -1017,12 +1022,12 @@ average.}
 \begin{axis}[xlabel={CSI error $\sigma_c$ (dB std)},ylabel={final NMSE (log)},
   ymode=log,legend pos=north west,clip=false,
   error bars/y dir=both,error bars/y explicit,error bars/error bar style={cGray}]
-\addplot[cGray!18,forget plot,area legend] coordinates {(0.5,1e-2) (2,1e-2) (2,2) (0.5,2)}
+\addplot[cGray!28,forget plot,area legend] coordinates {(0.5,1e-2) (2,1e-2) (2,2) (0.5,2)}
   \closedcycle;
 \node[cGray,font=\tiny,anchor=north] at (axis cs:1.25,1.6) {MLP $\ge$ KAN};
-\addplot[cOurs,very thick,mark=*] table[x=sigma,y=kan,y error=kan_sd] {data/csi_fed.dat};
+\addplot[cOurs,very thick,mark=*,mark size=3pt,mark options={draw=cOurs!60!black}] table[x=sigma,y=kan,y error=kan_sd] {data/csi_fed.dat};
 \addlegendentry{ours (KAN)}
-\addplot[cMlp,thick,densely dashed,mark=square*] table[x=sigma,y=mlp,y error=mlp_sd] {data/csi_fed.dat};
+\addplot[cMlp,thick,densely dashed,mark=square*,mark size=2.8pt,mark options={solid,draw=cMlp!60!black}] table[x=sigma,y=mlp,y error=mlp_sd] {data/csi_fed.dat};
 \addlegendentry{mlp}
 \end{axis}
 \end{tikzpicture}}
